@@ -11,8 +11,15 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-SCV_URL = "https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{id}"
+PRODUCTION = os.environ.get('PRODUCTION', False)
+
+# telegram configurations
+WEBHOOK_PORT = int(os.environ.get('WEBHOOK_PORT', '8443'))
+APP_NAME = os.environ.get('APP_NAME', 'https://pmon-helper.herokuapp.com/')
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
+
+# command response templates
+SCV_URL = "https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{id}"
 INTRODUCTION = f"""
 Hi\! I'm Polychain monster helper bot\!
 
@@ -69,7 +76,14 @@ def main():
     dp.add_error_handler(error)
 
     # Start the Bot
-    updater.start_polling()
+    if PRODUCTION:
+        updater.start_webhook(listen="0.0.0.0",
+                              port=WEBHOOK_PORT,
+                              url_path=TELEGRAM_BOT_TOKEN)
+        updater.bot.set_webhook(APP_NAME + TELEGRAM_BOT_TOKEN)
+    else:
+        # Start the Bot
+        updater.start_polling()
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
