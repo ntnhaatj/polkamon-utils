@@ -2,7 +2,7 @@ import logging
 import os
 
 from utils import get_metadata, transform_displayed_info
-from datatypes import Rarity, Attribute
+from datatypes import Metadata
 from telegram.ext import Updater, CommandHandler
 
 # Enable logging
@@ -11,33 +11,37 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
+SCV_URL = "https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{id}"
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 INTRODUCTION = f"""
-Hi! I'm Polychain monster helper bot!
+Hi\! I'm Polychain monster helper bot\!
 
-Commands
-  /mi <id> - monster info (birthday, score)
+*Commands*
+  /mi ID \- monster info \(birthday, score\)
 
-Donate:
+This bot is open\-source, you can contribute it at [github link](https://github.com/ntnhaatj/polkamon-utils)
+
+*Donate*
   ETH: {os.environ['DONATE_ADDR']}
   BSC: {os.environ['DONATE_ADDR']}
 """
 
 
 def start(update, context):
-    update.message.reply_text(INTRODUCTION)
+    update.message.reply_text(INTRODUCTION, parse_mode='MarkdownV2')
 
 
 def info(update, context):
     try:
         pmon_id = update.message.text.split(" ")[-1]
         metadata = get_metadata(pmon_id)
-        rarity = Rarity.from_metadata(metadata)
-        attribute = Attribute.from_metadata(metadata)
-        update.message.reply_text(transform_displayed_info({
-            'Score': rarity.rarity_score,
-            'Birthday': attribute.birthday
-        }))
+        meta = Metadata.from_metadata(metadata)
+        update.message.reply_text(
+            SCV_URL.format(id=pmon_id) + '\n' +
+            transform_displayed_info({
+                'Score': meta.rarity_score,
+                'Birthday': meta.attributes.birthday,
+            }))
     except Exception:
         pass
 

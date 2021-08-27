@@ -2,15 +2,14 @@ import argparse
 from termcolor import colored
 
 from utils import get_metadata
-from datatypes import Rarity, Attribute
+from datatypes import Metadata
 
 
 def main(args: list):
     metadata = get_metadata(args.id)
-    rarity = Rarity.from_metadata(metadata)
-    attribute = Attribute.from_metadata(metadata)
-    print(colored(f"Rarity score: {rarity.rarity_score}", "green"))
-    print(colored(f"Birthday: {attribute.birthday}", "yellow"))
+    meta = Metadata.from_metadata(metadata)
+    print(colored(f"Rarity score: {meta.rarity_score}", "green"))
+    print(colored(f"Birthday: {meta.attributes.birthday}", "yellow"))
 
 
 if __name__ == "__main__":

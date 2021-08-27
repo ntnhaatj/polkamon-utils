@@ -22,21 +22,12 @@ class Rarity:
                    glitter=rarity['glitter'],
                    type=rarity['type'])
 
-    @property
-    def value(self):
-        return reduce(lambda r, k: r * getattr(self, k),
-                      self.__dataclass_fields__.keys(),
-                      1)
-
-    @property
-    def rarity_score(self):
-        return int(1 / self.value / 40)
-
 
 @dataclass
 class Attribute:
     birthday: str
     color: str
+    special: bool
 
     @classmethod
     def __array_to_dict(cls, attributes: list):
@@ -53,4 +44,40 @@ class Attribute:
             birthday=datetime
                 .fromtimestamp(attributes['Birthday'], tz=pytz.timezone("Asia/Singapore"))
                 .strftime('%Y-%m-%d %H:%M:%S'),
-            color=attributes['Color'])
+            color=attributes['Color'],
+            special=(attributes['Special'] == 'Yes'))
+
+
+@dataclass
+class Metadata:
+    name: str
+    image: str
+    attributes: Attribute
+    rarity: Rarity
+
+    @classmethod
+    def from_metadata(cls, metadata: dict):
+        return cls(name=metadata['name'],
+                   image=metadata['image'],
+                   attributes=Attribute.from_metadata(metadata),
+                   rarity=Rarity.from_metadata(metadata))
+
+    @property
+    def rarity_pct(self) -> float:
+        if not self.attributes.special:
+            rarity_fields = self.rarity.__dataclass_fields__.keys()
+        else:
+            rarity_fields = (
+                f
+                for f in self.rarity.__dataclass_fields__.keys()
+                if f not in ['color', 'background']
+            )
+
+        return reduce(lambda r, k: r * getattr(self.rarity, k),
+                      rarity_fields,
+                      1)
+
+    @property
+    def rarity_score(self) -> int:
+        return int(1 / self.rarity_pct / 40) if not self.attributes.special \
+            else 'unsupported'
