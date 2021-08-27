@@ -5,9 +5,9 @@ name = "pypi"
 
 [packages]
 requests = "*"
-backoff = "*"
 pytz = "*"
 termcolor = "*"
+python-telegram-bot = "*"
 
 [dev-packages]
 
@@ -16,3 +16,4 @@ python_version = "3.9"
 
 [scripts]
 rarity = "python scripts/calculator.py --id"
+bot = "python scripts/telegram_bot.py"

@@ -5,15 +5,11 @@ from utils import get_metadata
 from datatypes import Rarity, Attribute
 
 
-def get_score(rarity: Rarity) -> int:
-    return int(1 / rarity.value / 40)
-
-
 def main(args: list):
     metadata = get_metadata(args.id)
     rarity = Rarity.from_metadata(metadata)
     attribute = Attribute.from_metadata(metadata)
-    print(colored(f"Rarity score: {get_score(rarity)}", "green"))
+    print(colored(f"Rarity score: {rarity.rarity_score}", "green"))
     print(colored(f"Birthday: {attribute.birthday}", "yellow"))
 
 

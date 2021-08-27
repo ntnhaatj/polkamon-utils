@@ -11,3 +11,8 @@ $ pipenv install
 ```shell script
 $ pipenv run rarity <ID>
 ```
+
+### Run telegram bot
+```shell script
+$ pipenv run bot
+```

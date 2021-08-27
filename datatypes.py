@@ -28,6 +28,10 @@ class Rarity:
                       self.__dataclass_fields__.keys(),
                       1)
 
+    @property
+    def rarity_score(self):
+        return int(1 / self.value / 40)
+
 
 @dataclass
 class Attribute:
