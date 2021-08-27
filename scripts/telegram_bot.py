@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 PRODUCTION = os.environ.get('PRODUCTION', False)
 
 # telegram configurations
-WEBHOOK_PORT = int(os.environ.get('WEBHOOK_PORT', '8443'))
+WEBHOOK_PORT = int(os.environ.get('PORT', '8443'))
 APP_NAME = os.environ.get('APP_NAME', 'https://pmon-helper.herokuapp.com/')
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 

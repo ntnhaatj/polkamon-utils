@@ -5,6 +5,11 @@ utilities for polkamon
 ### Installation
 ```shell script
 $ pipenv install
+$ cat .env
+PYTHONPATH=${PWD}:${PYTHONPATH}
+TELEGRAM_BOT_TOKEN="TOKEN_FROM_BOTFATHER"
+DONATE_ADDR="0x4cC86a0848d51419933C8033171bb34F8efd0604"
+#PRODUCTION=True # to deploy heroku
 ```
 
 ### Calculate rarity score
