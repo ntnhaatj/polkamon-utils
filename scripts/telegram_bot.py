@@ -5,7 +5,7 @@ from collections import namedtuple
 from telegram.ext import Updater, CommandHandler
 from telegram import ParseMode
 
-from utils import get_metadata, get_datatype_from_list, get_total_scores
+from utils import get_metadata, get_datatype_from_list, get_total_scores, get_leaderboard
 from datatypes import Metadata, Color, Type, Horn
 from helpers import SCVFilterBuilder, OSFilterBuilder
 
@@ -72,6 +72,7 @@ Commands
   /mi <ID>  - monster info (birthday, score)
   /r <type> <color/horn> <color/horn> - get marketplace filter links
   /total    - get total collector staking scores
+  /lb <to_rank (optional)>  - get leaderboard
 """
 
 # https://core.telegram.org/bots/api#html-style
@@ -147,6 +148,24 @@ class BotHandlers:
         update.message.reply_text(f"total staking scores: {total_scores}")
 
     @staticmethod
+    def get_leaderboard(update, context):
+        try:
+            anchor_rank = int(update.message.text.split(" ")[-1])
+        except ValueError:
+            anchor_rank = 3
+
+        try:
+            leaderboard = get_leaderboard(anchor_rank)
+            user_score_ranking = map(lambda u: f"{u['rank']}"
+                                               f"-{u['username']}"
+                                               f"-{'{:,}'.format(u['score'])}",
+                                     leaderboard)
+            update.message.reply_text('\n'.join(user_score_ranking))
+        except NotImplementedError as e:
+            update.message.reply_text(str(e))
+            raise Exception from e
+
+    @staticmethod
     def error(update, context):
         """Log Errors caused by Updates."""
         logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -168,6 +187,7 @@ def main():
     dp.add_handler(CommandHandler("mi", BotHandlers.info, pass_args=True))
     dp.add_handler(CommandHandler("r", BotHandlers.get_ref_links, pass_args=True))
     dp.add_handler(CommandHandler("total", BotHandlers.get_total_staking_score))
+    dp.add_handler(CommandHandler("lb", BotHandlers.get_leaderboard))
 
     # log all errors
     dp.add_error_handler(BotHandlers.error)
