@@ -29,6 +29,7 @@ class Attribute:
     type: str
     horn: str
     color: str
+    glitter: str
     special: bool
 
     @classmethod
@@ -49,11 +50,13 @@ class Attribute:
             color=attributes['Color'],
             horn=attributes['Horn'],
             type=attributes['Type'],
+            glitter=attributes['Glitter'],
             special=(attributes['Special'] == 'Yes'))
 
 
 @dataclass
 class Metadata:
+    id: str
     name: str
     image: str
     attributes: Attribute
@@ -61,7 +64,8 @@ class Metadata:
 
     @classmethod
     def from_metadata(cls, metadata: dict):
-        return cls(name=metadata['name'],
+        return cls(id=metadata['id'],
+                   name=metadata['name'],
                    image=metadata['image'],
                    attributes=Attribute.from_metadata(metadata),
                    rarity=Rarity.from_metadata(metadata))
