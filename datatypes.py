@@ -26,6 +26,8 @@ class Rarity:
 @dataclass
 class Attribute:
     birthday: str
+    type: str
+    horn: str
     color: str
     special: bool
 
@@ -45,6 +47,8 @@ class Attribute:
                 .fromtimestamp(attributes['Birthday'], tz=pytz.timezone("Asia/Singapore"))
                 .strftime('%Y-%m-%d %H:%M:%S'),
             color=attributes['Color'],
+            horn=attributes['Horn'],
+            type=attributes['Type'],
             special=(attributes['Special'] == 'Yes'))
 
 

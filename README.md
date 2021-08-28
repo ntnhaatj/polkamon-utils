@@ -21,3 +21,14 @@ $ pipenv run rarity <ID>
 ```shell script
 $ pipenv run bot
 ```
+
+## Deployment
+### Telegram bot
+- Heroku
+```shell script
+$ heroku login
+$ heroku config:set TELEGRAM_BOT_TOKEN="TOKEN_FROM_BOTFATHER" \
+                    DONATE_ADDR="0x4cC86a0848d51419933C8033171bb34F8efd0604" \
+                    PRODUCTION=True
+$ git push heroku
+```
