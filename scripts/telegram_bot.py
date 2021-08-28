@@ -24,10 +24,10 @@ TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 # url with desc
 DescUrl = namedtuple('DescUrl', ('desc', 'url'))
 SCV_URL = DescUrl(
-    desc="SCV link",
+    desc="SCV",
     url="https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{id}")
 SCV_REF_URL = DescUrl(
-    desc="SCV ref prices",
+    desc="SCV ref",
     url="https://scv.finance/nft/collection/polychain-monsters"
         "?meta_text_0={type}"
         "&meta_text_1={horn}"
@@ -35,7 +35,7 @@ SCV_REF_URL = DescUrl(
         "&meta_text_5={glitter}"
         "&sort=price_asc")
 OS_REF_URL = DescUrl(
-    desc="OS ref prices",
+    desc="OS ref",
     url="https://opensea.io/collection/polychainmonsters"
         "?search[resultModel]=ASSETS"
         "&search[sortAscending]=true"
@@ -68,7 +68,7 @@ This bot is open\-source, you can contribute it at [github link](https://github.
 # https://core.telegram.org/bots/api#html-style
 INFO_HTML_TEMPLATE = "<a href='{image}'>&#8205;</a>" \
                      "{ref_links}\n" \
-                     "score: {score}   |   birthday: {birthday}"
+                     "s: {score} | b: {birthday}"
 
 
 def get_ref_links(meta: Metadata) -> tuple:
@@ -103,7 +103,7 @@ class BotHandlers:
 
         update.message.reply_text(
             INFO_HTML_TEMPLATE.format(image=meta.image,
-                                      ref_links="   |   ".join(get_ref_links(meta)),
+                                      ref_links=" | ".join(get_ref_links(meta)),
                                       score=meta.rarity_score,
                                       birthday=meta.attributes.birthday),
             parse_mode=ParseMode.HTML)

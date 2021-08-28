@@ -46,7 +46,7 @@ class Attribute:
         return cls(
             birthday=datetime
                 .fromtimestamp(attributes['Birthday'], tz=pytz.timezone("Asia/Singapore"))
-                .strftime('%Y-%m-%d %H:%M:%S'),
+                .strftime('%Y-%m-%d %H:%M'),
             color=attributes['Color'],
             horn=attributes['Horn'],
             type=attributes['Type'],
