@@ -5,8 +5,9 @@ from collections import namedtuple
 from telegram.ext import Updater, CommandHandler
 from telegram import ParseMode
 
-from utils import get_metadata
-from datatypes import Metadata, Color, Type
+from utils import get_metadata, get_datatype_from_list
+from datatypes import Metadata, Color, Type, Horn
+from helpers import SCVFilterBuilder, OSFilterBuilder
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -51,26 +52,6 @@ OS_REF_URL = DescUrl(
 
 REF_URLS = (SCV_REF_URL, OS_REF_URL,)
 
-# todo ref builder
-SIMPLE_SEARCH_SCV_REF = DescUrl(
-    desc="SCV ref",
-    url="https://scv.finance/nft/collection/polychain-monsters"
-        "?meta_text_0={type}"
-        "&meta_text_2={color}"
-        "&sort=price_asc")
-
-SIMPLE_SEARCH_OS_REF = DescUrl(
-    desc="OS ref",
-    url="https://opensea.io/collection/polychainmonsters"
-        "?search[resultModel]=ASSETS"
-        "&search[sortAscending]=true"
-        "&search[sortBy]=PRICE"
-        "&search[stringTraits][2][name]=Color"
-        "&search[stringTraits][2][values][0]={color}"
-        "&search[stringTraits][3][name]=Type"
-        "&search[stringTraits][3][values][0]={type}")
-
-SIMPLE_SEARCH_URLS = (SIMPLE_SEARCH_SCV_REF, SIMPLE_SEARCH_OS_REF,)
 
 # https://core.telegram.org/bots/api#markdown-style
 INTRODUCTION = f"""
@@ -144,19 +125,18 @@ class BotHandlers:
 
     @staticmethod
     def get_ref_links(update, context):
-        try:
-            typ3, color = update.message.text.split(" ")[1:]
-            typ3 = Type.of(typ3).value
-            color = Color.of(color).value
-            html_refs = tuple(map(lambda url: to_html(
-                url, type=typ3, color=color), SIMPLE_SEARCH_URLS))
-        except Exception as e:
-            update.message.reply_text(f"Invalid {update.message.text}")
-            raise Exception from e
-
+        typ3, attrs_str = update.message.text.split(" ", 2)[1:]
+        typ3 = Type.of(typ3)
+        attrs = attrs_str.split(" ")
+        horn = get_datatype_from_list(Horn, attrs)
+        color = get_datatype_from_list(Color, attrs)
+        scv = SCVFilterBuilder(type=typ3, horn=horn, color=color)
+        opensea = OSFilterBuilder(type=typ3, horn=horn, color=color)
+        scv_url_html = to_html(DescUrl(desc="SCV", url=scv.url))
+        os_url_html = to_html(DescUrl(desc="Opensea", url=opensea.url))
         update.message.reply_text(
-            f"{color} {typ3}\n" +
-            "{ref_links}".format(ref_links=" | ".join(html_refs)),
+            f"{scv.name}\n"
+            f"{scv_url_html} | {os_url_html}",
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True)
 

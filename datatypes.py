@@ -101,6 +101,7 @@ class Type(Enum):
     TURTLE = "Uniturle"
     AIR = "Uniair"
     KLES = "Unikles"
+    BRANCH = "Unibranch"
     AQUA = "Uniaqua"
     DRAGON = "Unidragon"
 
@@ -123,5 +124,26 @@ class Color(Enum):
     def of(cls, i: str):
         for mem in cls.__members__.values():
             if i in mem.value or i in mem.value.lower():
+                return mem
+        raise NotImplementedError(f"not found {i}")
+
+
+class Horn(Enum):
+    BABY_HORN = "Baby Horn"
+    CANDY_CANE = "Candy Cane"
+    DIAMOND_SPEAR = "Diamond Spear"
+    DRAGON_CLAW = "Dragon Claw"
+    GOLDEN_HORN = "Golden Horn"
+    IVORY_FANG = "Ivory Fang"
+    SHADOW_BRANCH = "Shadow Branch"
+    SILVER_CLAW = "Silver Claw"
+    SILVER_EDGE = "Silver Edge"
+    SPIRAL_HORN = "Spiral Horn"
+    WICKED_SPEAR = "Wicked Spear"
+
+    @classmethod
+    def of(cls, i: str):
+        for mem in cls.__members__.values():
+            if i in mem.value or i in mem.value.lower().replace(" ", ""):
                 return mem
         raise NotImplementedError(f"not found {i}")

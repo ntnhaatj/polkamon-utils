@@ -15,3 +15,12 @@ def get_metadata(m_id: str) -> dict:
 
 def transform_displayed_info(info: dict) -> str:
     return "\n".join([f"{k}: {v}" for k, v in info.items()])
+
+
+def get_datatype_from_list(data_type, attrs: list):
+    for a in attrs:
+        try:
+            return data_type.of(a)
+        except NotImplementedError:
+            pass
+    return None
