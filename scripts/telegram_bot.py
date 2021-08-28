@@ -6,7 +6,7 @@ from telegram.ext import Updater, CommandHandler
 from telegram import ParseMode
 
 from utils import get_metadata
-from datatypes import Metadata
+from datatypes import Metadata, Color, Type
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -51,12 +51,33 @@ OS_REF_URL = DescUrl(
 
 REF_URLS = (SCV_REF_URL, OS_REF_URL,)
 
+# todo ref builder
+SIMPLE_SEARCH_SCV_REF = DescUrl(
+    desc="SCV ref",
+    url="https://scv.finance/nft/collection/polychain-monsters"
+        "?meta_text_0={type}"
+        "&meta_text_2={color}"
+        "&sort=price_asc")
+
+SIMPLE_SEARCH_OS_REF = DescUrl(
+    desc="OS ref",
+    url="https://opensea.io/collection/polychainmonsters"
+        "?search[resultModel]=ASSETS"
+        "&search[sortAscending]=true"
+        "&search[sortBy]=PRICE"
+        "&search[stringTraits][2][name]=Color"
+        "&search[stringTraits][2][values][0]={color}"
+        "&search[stringTraits][3][name]=Type"
+        "&search[stringTraits][3][values][0]={type}")
+
+SIMPLE_SEARCH_URLS = (SIMPLE_SEARCH_SCV_REF, SIMPLE_SEARCH_OS_REF,)
+
 # https://core.telegram.org/bots/api#markdown-style
 INTRODUCTION = f"""
 Hi\! I'm Polychain monster helper bot\!
 
 *Commands*
-  /mi ID \- monster info \(birthday, score\)
+  /help ID \- show help
 
 This bot is open\-source, you can contribute it at [github link](https://github.com/ntnhaatj/polkamon-utils)
 
@@ -65,20 +86,27 @@ This bot is open\-source, you can contribute it at [github link](https://github.
   BSC: {os.environ['DONATE_ADDR']}
 """
 
+HELP = f"""
+Commands
+  /mi <ID>  - monster info (birthday, score)
+  /r <type> <color>   - get marketplace filter links
+"""
+
 # https://core.telegram.org/bots/api#html-style
 INFO_HTML_TEMPLATE = "<a href='{image}'>&#8205;</a>" \
                      "{ref_links}\n" \
                      "s: {score} | b: {birthday}"
 
 
-def get_ref_links(meta: Metadata) -> tuple:
-    def gen_ref_links_v2(url_desc: DescUrl, **fmt_args):
-        ref_link = url_desc.url.format(**fmt_args)
-        return f"<a href='{ref_link}'>{url_desc.desc}</a>"
+def to_html(url_desc: DescUrl, **fmt_args):
+    ref_link = url_desc.url.format(**fmt_args)
+    return f"<a href='{ref_link}'>{url_desc.desc}</a>"
 
+
+def get_ref_links(meta: Metadata) -> tuple:
     return (
-       gen_ref_links_v2(SCV_URL, id=meta.id),
-    ) + tuple(map(lambda url: gen_ref_links_v2(
+       to_html(SCV_URL, id=meta.id),
+    ) + tuple(map(lambda url: to_html(
         url,
         type=meta.attributes.type,
         horn=meta.attributes.horn,
@@ -89,7 +117,13 @@ def get_ref_links(meta: Metadata) -> tuple:
 class BotHandlers:
     @staticmethod
     def start(update, context):
-        update.message.reply_text(INTRODUCTION, parse_mode=ParseMode.MARKDOWN_V2)
+        update.message.reply_text(INTRODUCTION,
+                                  parse_mode=ParseMode.MARKDOWN_V2,
+                                  disable_web_page_preview=True)
+
+    @staticmethod
+    def help(update, context):
+        update.message.reply_text(HELP)
 
     @staticmethod
     def info(update, context):
@@ -109,6 +143,24 @@ class BotHandlers:
             parse_mode=ParseMode.HTML)
 
     @staticmethod
+    def get_ref_links(update, context):
+        try:
+            typ3, color = update.message.text.split(" ")[1:]
+            typ3 = Type.of(typ3).value
+            color = Color.of(color).value
+            html_refs = tuple(map(lambda url: to_html(
+                url, type=typ3, color=color), SIMPLE_SEARCH_URLS))
+        except Exception as e:
+            update.message.reply_text(f"Invalid {update.message.text}")
+            raise Exception from e
+
+        update.message.reply_text(
+            f"{color} {typ3}\n" +
+            "{ref_links}".format(ref_links=" | ".join(html_refs)),
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True)
+
+    @staticmethod
     def error(update, context):
         """Log Errors caused by Updates."""
         logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -126,7 +178,9 @@ def main():
 
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", BotHandlers.start))
+    dp.add_handler(CommandHandler("help", BotHandlers.help))
     dp.add_handler(CommandHandler("mi", BotHandlers.info, pass_args=True))
+    dp.add_handler(CommandHandler("r", BotHandlers.get_ref_links, pass_args=True))
 
     # log all errors
     dp.add_error_handler(BotHandlers.error)

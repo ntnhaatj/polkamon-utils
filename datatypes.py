@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import reduce
+from enum import Enum
 
 from datetime import datetime
 import pytz
@@ -45,8 +46,8 @@ class Attribute:
         attributes = cls.__array_to_dict(metadata['attributes'])
         return cls(
             birthday=datetime
-                .fromtimestamp(attributes['Birthday'], tz=pytz.timezone("Asia/Singapore"))
-                .strftime('%Y-%m-%d %H:%M'),
+                .fromtimestamp(attributes['Birthday'], tz=pytz.timezone("Etc/GMT+7"))
+                .strftime('%Y-%m-%d'),
             color=attributes['Color'],
             horn=attributes['Horn'],
             type=attributes['Type'],
@@ -89,3 +90,38 @@ class Metadata:
     def rarity_score(self) -> int:
         return int(1 / self.rarity_pct / 40) if not self.attributes.special \
             else 'unsupported'
+
+
+class Type(Enum):
+    DONKEY = "Unidonkey"
+    SHEEP = "Unisheep"
+    CHICK = "Unichick"
+    FAIRY = "Unifairy"
+    CURSED = "Unicursed"
+    TURTLE = "Uniturle"
+    AIR = "Uniair"
+    KLES = "Unikles"
+    AQUA = "Uniaqua"
+    DRAGON = "Unidragon"
+
+    @classmethod
+    def of(cls, i: str):
+        for mem in cls.__members__.values():
+            if i in mem.value or i in mem.value.lower():
+                return mem
+        raise NotImplementedError(f"not found {i}")
+
+
+class Color(Enum):
+    GREEN = "Green"
+    RED = "Red"
+    YELLOW = "Yellow"
+    PURPLE = "Purple"
+    BLACK = "Black"
+
+    @classmethod
+    def of(cls, i: str):
+        for mem in cls.__members__.values():
+            if i in mem.value or i in mem.value.lower():
+                return mem
+        raise NotImplementedError(f"not found {i}")
