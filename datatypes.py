@@ -55,6 +55,7 @@ class Attribute:
             special=(attributes['Special'] == 'Yes'))
 
 
+RARITY_SCORE_MAX_CAP = 1_000_000
 @dataclass
 class Metadata:
     id: str
@@ -88,8 +89,9 @@ class Metadata:
 
     @property
     def rarity_score(self) -> int:
-        return int(1 / self.rarity_pct / 40) if not self.attributes.special \
-            else 'unsupported'
+        return min(RARITY_SCORE_MAX_CAP,
+                   int(1 / self.rarity_pct / 40) if not self.attributes.special
+                   else 0)
 
 
 class Type(Enum):
