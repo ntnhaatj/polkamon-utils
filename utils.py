@@ -1,9 +1,12 @@
 import requests
 from requests.exceptions import RequestException
+from functools import reduce
+from datetime import datetime, timedelta
 
 METADATA_URL = "http://meta.polkamon.com/meta?id={id}"
 RANK_AND_SHARE = "https://pkm-collectorstaking.herokuapp.com/rankAndShare/{score}"
 LEADERBOARD = "https://pkm-collectorstaking.herokuapp.com/leaderboard?limit={limit}"
+OVERALL = "https://nft-tracker.net/_next/data/FYCcAwpjHdPYAgMShl2aN/collections/polychainmonsters/overall.json"
 
 
 def get_metadata(m_id: str) -> dict:
@@ -54,3 +57,54 @@ def get_datatype_from_list(data_type, attrs: list):
         except NotImplementedError:
             pass
     return None
+
+
+def get_overall_stats():
+    res = requests.get(OVERALL)
+    if res.status_code == 200:
+        return res.json()
+
+    raise RequestException
+
+
+def get_birthday_stats():
+    """
+    :return:
+    [
+      {
+        "count": 42384,
+        "value": {
+          "year": 2021,
+          "month": 5,
+          "day": 26
+        }
+      },
+      {
+        "count": 28791,
+        "value": {
+          "year": 2021,
+          "month": 4,
+          "day": 3
+        }
+      },
+    ]
+    """
+    try:
+        birthday = get_overall_stats()['pageProps']['initialCollection']['attributes']['Birthday']
+    except IndexError:
+        raise IndexError("overall API has changed")
+    return birthday
+
+
+def get_last_7_days_birthday_stats():
+    def transform_bdate(b: dict):
+        v = b['value']
+        s = f"{v['year']}-{v['month']}-{v['day']}"
+        date = datetime.strptime(s, "%Y-%m-%d").date()
+        return {**b, 'value': date}
+    birthday = get_birthday_stats()
+    current_date = datetime.today().date()
+    last_7_days_stats = list(filter(lambda b: b['value'] >= current_date - timedelta(days=7),
+                                    map(transform_bdate, birthday)))
+    total = reduce(lambda total, s: total + int(s['count']), last_7_days_stats, 0)
+    return last_7_days_stats, total

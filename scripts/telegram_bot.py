@@ -11,6 +11,7 @@ from utils import (
     get_total_scores,
     get_leaderboard,
     get_share_on_score,
+    get_last_7_days_birthday_stats,
 )
 from datatypes import Metadata, Color, Type, Horn, Glitter
 from helpers import SCVFilterBuilder, OSFilterBuilder
@@ -80,6 +81,7 @@ Commands
   /total    - get total collector staking scores
   /lb <to_rank (optional)>  - get leaderboard
   /rw <score> <pool_per_week>  - calculate reward per week
+  /openstats  - open booster stats
 """
 
 # https://core.telegram.org/bots/api#html-style
@@ -183,6 +185,15 @@ class BotHandlers:
             score, pool_per_week * share, pool_per_week))
 
     @staticmethod
+    def get_open_booster_stats(update, context):
+        stats, total = get_last_7_days_birthday_stats()
+        booster_stats = map(lambda s: f"{s['value']}: {int(int(s['count'])/3)}", stats)
+        total_booster = int(total / 3)
+        update.message.reply_text("Open booster stats:\n\n"
+                                  "{}\n\n"
+                                  "Total: {}".format("\n".join(booster_stats), total_booster))
+
+    @staticmethod
     def error(update, context):
         """Log Errors caused by Updates."""
         logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -206,6 +217,7 @@ def main():
     dp.add_handler(CommandHandler("total", BotHandlers.get_total_staking_score))
     dp.add_handler(CommandHandler("lb", BotHandlers.get_leaderboard))
     dp.add_handler(CommandHandler("rw", BotHandlers.calc_reward))
+    dp.add_handler(CommandHandler("openstats", BotHandlers.get_open_booster_stats))
 
     # log all errors
     dp.add_error_handler(BotHandlers.error)
