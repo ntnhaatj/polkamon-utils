@@ -122,6 +122,7 @@ class Type(Traits):
 
 class Color(Traits):
     GREEN = "Green"
+    BLUE = "Blue"
     RED = "Red"
     YELLOW = "Yellow"
     PURPLE = "Purple"
