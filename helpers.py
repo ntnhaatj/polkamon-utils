@@ -64,7 +64,7 @@ class OSFilterBuilder(FilterBuilder):
              f"search[stringTraits][2][name]=Horn"
              f"&search[stringTraits][2][values][0]={self.horn.value}" if self.horn else None,
              f"search[stringTraits][2][name]=Glitter"
-             f"&search[stringTraits][2][values][0]={self.glitter.value}" if self.horn else None,)
+             f"&search[stringTraits][2][values][0]={self.glitter.value}" if self.glitter else None,)
         )
 
     @property
