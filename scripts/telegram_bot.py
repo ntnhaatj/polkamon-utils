@@ -6,7 +6,7 @@ from telegram.ext import Updater, CommandHandler
 from telegram import ParseMode
 
 from utils import get_metadata, get_datatype_from_list, get_total_scores, get_leaderboard
-from datatypes import Metadata, Color, Type, Horn
+from datatypes import Metadata, Color, Type, Horn, Glitter
 from helpers import SCVFilterBuilder, OSFilterBuilder
 
 # Enable logging
@@ -132,8 +132,9 @@ class BotHandlers:
         attrs = attrs_str.split(" ")
         horn = get_datatype_from_list(Horn, attrs)
         color = get_datatype_from_list(Color, attrs)
-        scv = SCVFilterBuilder(type=typ3, horn=horn, color=color)
-        opensea = OSFilterBuilder(type=typ3, horn=horn, color=color)
+        glitter = get_datatype_from_list(Glitter, attrs)
+        scv = SCVFilterBuilder(type=typ3, horn=horn, color=color, glitter=glitter)
+        opensea = OSFilterBuilder(type=typ3, horn=horn, color=color, glitter=glitter)
         scv_url_html = to_html(DescUrl(desc="SCV", url=scv.url))
         os_url_html = to_html(DescUrl(desc="Opensea", url=opensea.url))
         update.message.reply_text(
@@ -156,9 +157,9 @@ class BotHandlers:
 
         try:
             leaderboard = get_leaderboard(anchor_rank)
-            user_score_ranking = map(lambda u: f"{u['rank']}"
-                                               f"-{u['username']}"
-                                               f"-{'{:,}'.format(u['score'])}",
+            user_score_ranking = map(lambda u: f"{u['rank']}/"
+                                               f" {u['username']}"
+                                               f" - {'{:,}'.format(u['score'])}",
                                      leaderboard)
             update.message.reply_text('\n'.join(user_score_ranking))
         except NotImplementedError as e:

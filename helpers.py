@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datatypes import Type, Horn, Color
+from datatypes import Type, Horn, Color, Glitter
 
 
 @dataclass
@@ -7,10 +7,14 @@ class FilterBuilder:
     type: Type = None
     horn: Horn = None
     color: Color = None
+    glitter: Glitter = None
 
     @property
     def name(self):
-        return " ".join((a.value for a in (self.horn, self.color, self.type) if a is not None))
+        return " ".join((
+            str(a)
+            for a in (self.glitter, self.horn, self.color, self.type) if a is not None
+        ))
 
 
 @dataclass
@@ -27,7 +31,8 @@ class SCVFilterBuilder(FilterBuilder):
             (*self.base_filters,
              f"meta_text_0={self.type.value}" if self.type else None,
              f"meta_text_1={self.horn.value}" if self.horn else None,
-             f"meta_text_2={self.color.value}" if self.color else None)
+             f"meta_text_2={self.color.value}" if self.color else None,
+             f"meta_text_5={self.glitter.value}" if self.glitter else None,)
         )
 
     @property
@@ -56,7 +61,9 @@ class OSFilterBuilder(FilterBuilder):
              f"search[stringTraits][1][name]=Color"
              f"&search[stringTraits][1][values][0]={self.color.value}" if self.color else None,
              f"search[stringTraits][2][name]=Horn"
-             f"&search[stringTraits][2][values][0]={self.horn.value}" if self.horn else None,)
+             f"&search[stringTraits][2][values][0]={self.horn.value}" if self.horn else None,
+             f"search[stringTraits][2][name]=Glitter"
+             f"&search[stringTraits][2][values][0]={self.glitter.value}" if self.horn else None,)
         )
 
     @property

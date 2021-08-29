@@ -94,7 +94,19 @@ class Metadata:
                    else 0)
 
 
-class Type(Enum):
+class Traits(Enum):
+    @classmethod
+    def of(cls, i: str):
+        for mem in cls.__members__.values():
+            if i in mem.value or i in mem.value.lower().replace(" ", ""):
+                return mem
+        raise NotImplementedError(f"not found {i}")
+
+    def __str__(self):
+        return self.value
+
+
+class Type(Traits):
     DONKEY = "Unidonkey"
     SHEEP = "Unisheep"
     CHICK = "Unichick"
@@ -107,30 +119,16 @@ class Type(Enum):
     AQUA = "Uniaqua"
     DRAGON = "Unidragon"
 
-    @classmethod
-    def of(cls, i: str):
-        for mem in cls.__members__.values():
-            if i in mem.value or i in mem.value.lower():
-                return mem
-        raise NotImplementedError(f"not found {i}")
 
-
-class Color(Enum):
+class Color(Traits):
     GREEN = "Green"
     RED = "Red"
     YELLOW = "Yellow"
     PURPLE = "Purple"
     BLACK = "Black"
 
-    @classmethod
-    def of(cls, i: str):
-        for mem in cls.__members__.values():
-            if i in mem.value or i in mem.value.lower():
-                return mem
-        raise NotImplementedError(f"not found {i}")
 
-
-class Horn(Enum):
+class Horn(Traits):
     BABY_HORN = "Baby Horn"
     CANDY_CANE = "Candy Cane"
     DIAMOND_SPEAR = "Diamond Spear"
@@ -143,9 +141,16 @@ class Horn(Enum):
     SPIRAL_HORN = "Spiral Horn"
     WICKED_SPEAR = "Wicked Spear"
 
+
+class Glitter(Traits):
+    YES = "Yes"
+    NO = "No"
+
     @classmethod
     def of(cls, i: str):
-        for mem in cls.__members__.values():
-            if i in mem.value or i in mem.value.lower().replace(" ", ""):
-                return mem
+        if i in "glitter" or i in "Glitter":
+            return cls.YES
         raise NotImplementedError(f"not found {i}")
+
+    def __str__(self):
+        return "Glitter" if self == Glitter.YES else ""
