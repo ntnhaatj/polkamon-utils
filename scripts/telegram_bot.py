@@ -11,7 +11,7 @@ from utils import (
     get_total_scores,
     get_leaderboard,
     get_share_on_score,
-    get_last_7_days_birthday_stats,
+    get_weekly_birthday_snapshot,
 )
 from datatypes import Metadata, Color, Type, Horn, Glitter
 from helpers import SCVFilterBuilder, OSFilterBuilder
@@ -186,12 +186,12 @@ class BotHandlers:
 
     @staticmethod
     def get_open_booster_stats(update, context):
-        stats, total = get_last_7_days_birthday_stats()
+        stats, total = get_weekly_birthday_snapshot()
         stats = sorted(stats, key=lambda k: k['value'])
         booster_stats = map(lambda s: "{}: {:,}".format(s['value'], int(int(s['count'])/3)), stats)
         total_booster = int(total / 3)
         update.message.reply_text(
-            "Open booster last 7 days:\n\n"
+            "Open booster from last snapshot:\n\n"
             "{}\n\n"
             "Total: {:,}\n"
             "NFT staking pool (20%): {:,}\n"

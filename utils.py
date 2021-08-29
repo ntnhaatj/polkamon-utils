@@ -1,12 +1,12 @@
 import requests
 from requests.exceptions import RequestException
 from functools import reduce
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 METADATA_URL = "http://meta.polkamon.com/meta?id={id}"
 RANK_AND_SHARE = "https://pkm-collectorstaking.herokuapp.com/rankAndShare/{score}"
 LEADERBOARD = "https://pkm-collectorstaking.herokuapp.com/leaderboard?limit={limit}"
-OVERALL = "https://nft-tracker.net/_next/data/FYCcAwpjHdPYAgMShl2aN/collections/polychainmonsters/overall.json"
+OVERALL = "https://nft-tracker.net/_next/data/FYCcAwpjHdPYAgMShl2aN/collections/polychainmonsters/statistics.json?slug=polychainmonsters&tab=overall"
 
 
 def get_metadata(m_id: str) -> dict:
@@ -96,15 +96,17 @@ def get_birthday_stats():
     return birthday
 
 
-def get_last_7_days_birthday_stats():
+def get_weekly_birthday_snapshot():
     def transform_bdate(b: dict):
         v = b['value']
         s = f"{v['year']}-{v['month']}-{v['day']}"
         date = datetime.strptime(s, "%Y-%m-%d").date()
         return {**b, 'value': date}
     birthday = get_birthday_stats()
-    current_date = datetime.today().date()
-    last_7_days_stats = list(filter(lambda b: b['value'] >= current_date - timedelta(days=7),
+    today = date.today()
+    offset = (today.weekday() - 2) % 7
+    last_date_after_snapshot = today - timedelta(days=offset)
+    last_7_days_stats = list(filter(lambda b: b['value'] >= last_date_after_snapshot,
                                     map(transform_bdate, birthday)))
     total = reduce(lambda total, s: total + int(s['count']), last_7_days_stats, 0)
     return last_7_days_stats, total
