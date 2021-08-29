@@ -187,11 +187,19 @@ class BotHandlers:
     @staticmethod
     def get_open_booster_stats(update, context):
         stats, total = get_last_7_days_birthday_stats()
-        booster_stats = map(lambda s: f"{s['value']}: {int(int(s['count'])/3)}", stats)
+        stats = sorted(stats, key=lambda k: k['value'])
+        booster_stats = map(lambda s: "{}: {:,}".format(s['value'], int(int(s['count'])/3)), stats)
         total_booster = int(total / 3)
-        update.message.reply_text("Open booster stats:\n\n"
-                                  "{}\n\n"
-                                  "Total: {}".format("\n".join(booster_stats), total_booster))
+        update.message.reply_text(
+            "Open booster last 7 days:\n\n"
+            "{}\n\n"
+            "Total: {:,}\n"
+            "NFT staking pool (20%): {:,}\n"
+            "Staking pool (45%): {:,}".format(
+                "\n".join(booster_stats),
+                total_booster,
+                int(total_booster * 0.2),
+                int(total_booster * 0.45)))
 
     @staticmethod
     def error(update, context):
