@@ -21,6 +21,7 @@ class FilterBuilder:
 class SCVFilterBuilder(FilterBuilder):
     base_url: str = "https://scv.finance/nft/collection/polychain-monsters"
     base_filters: tuple = (
+        "category=fixed-price",
         "sort=price_asc",
     )
 
