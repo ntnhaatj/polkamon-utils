@@ -15,15 +15,18 @@ def get_metadata(m_id: str) -> dict:
     raise RequestException("")
 
 
-def get_total_scores() -> int:
-    foo_score = 1_000_000
-    url = RANK_AND_SHARE.format(score=foo_score)
+def get_share_on_score(score: int) -> float:
+    url = RANK_AND_SHARE.format(score=score)
     res = requests.get(url)
     if res.status_code == 200:
-        share = res.json()['share']
-        return int(foo_score / share)
+        return float(res.json()['share']) / 100
 
     raise RequestException("")
+
+
+def get_total_scores() -> int:
+    foo_score = 1_000_000
+    return int(foo_score / get_share_on_score(foo_score))
 
 
 def get_leaderboard(anchor_rank: int = 10):

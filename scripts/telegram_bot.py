@@ -5,7 +5,13 @@ from collections import namedtuple
 from telegram.ext import Updater, CommandHandler
 from telegram import ParseMode
 
-from utils import get_metadata, get_datatype_from_list, get_total_scores, get_leaderboard
+from utils import (
+    get_metadata,
+    get_datatype_from_list,
+    get_total_scores,
+    get_leaderboard,
+    get_share_on_score,
+)
 from datatypes import Metadata, Color, Type, Horn, Glitter
 from helpers import SCVFilterBuilder, OSFilterBuilder
 
@@ -73,6 +79,7 @@ Commands
   /r <type> <color/horn> <color/horn> - get marketplace filter links
   /total    - get total collector staking scores
   /lb <to_rank (optional)>  - get leaderboard
+  /rw <score> <pool_per_week>  - calculate reward per week
 """
 
 # https://core.telegram.org/bots/api#html-style
@@ -167,6 +174,15 @@ class BotHandlers:
             raise Exception from e
 
     @staticmethod
+    def calc_reward(update, context):
+        score, pool_per_week = map(lambda x: int(x), update.message.text.split(" ")[1:])
+        share = get_share_on_score(score)
+        update.message.reply_text("{:,} score gains "
+                                  "{:.2f} $pmon per week "
+                                  "(pool: {:,} $pmon)".format(
+            score, pool_per_week * share, pool_per_week))
+
+    @staticmethod
     def error(update, context):
         """Log Errors caused by Updates."""
         logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -189,6 +205,7 @@ def main():
     dp.add_handler(CommandHandler("r", BotHandlers.get_ref_links, pass_args=True))
     dp.add_handler(CommandHandler("total", BotHandlers.get_total_staking_score))
     dp.add_handler(CommandHandler("lb", BotHandlers.get_leaderboard))
+    dp.add_handler(CommandHandler("rw", BotHandlers.calc_reward))
 
     # log all errors
     dp.add_error_handler(BotHandlers.error)
