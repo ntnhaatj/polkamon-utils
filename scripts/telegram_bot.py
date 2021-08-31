@@ -108,10 +108,14 @@ def get_ref_links(meta: Metadata) -> tuple:
 
 
 class PmonTokenomics(Enum):
-    NFT_STAKING_POOL = 0.25
-    STAKING_POOL = 0.15
-    BURNED = 0.5
-    DEVELOPMENT = 0.1
+    # NFT_STAKING_POOL = 0.25
+    # STAKING_POOL = 0.15
+    # BURNED = 0.5
+    # DEVELOPMENT = 0.1
+    NFT_STAKING_POOL = 0.20
+    STAKING_POOL = 0.20
+    BURNED = 0.65
+    DEVELOPMENT = 0
 
     def to_pct(self):
         return f"{self.value * 100}%"
