@@ -15,6 +15,7 @@ from utils import (
 )
 from datatypes import Metadata, Color, Type, Horn, Glitter
 from helpers import SCVFilterBuilder, OSFilterBuilder
+from enum import Enum
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -106,6 +107,15 @@ def get_ref_links(meta: Metadata) -> tuple:
         color=meta.attributes.color), REF_URLS))
 
 
+class PmonTokenomics(Enum):
+    NFT_STAKING_POOL = 0.25
+    STAKING_POOL = 0.1
+    BURNED = 0.65
+
+    def to_pct(self):
+        return f"{self.value * 100}%"
+
+
 class BotHandlers:
     @staticmethod
     def start(update, context):
@@ -194,12 +204,18 @@ class BotHandlers:
             "Open booster from last snapshot:\n\n"
             "{}\n\n"
             "Total: {:,}\n"
-            "NFT staking pool (20%): {:,}\n"
-            "Staking pool (45%): {:,}".format(
+            "NFT staking pool ({}%): {:,}\n"
+            "Staking pool ({}%): {:,}\n"
+            "Burned ({}%): {:,}".format(
                 "\n".join(booster_stats),
                 total_booster,
-                int(total_booster * 0.2),
-                int(total_booster * 0.45)))
+                PmonTokenomics.NFT_STAKING_POOL.to_pct(),
+                int(total_booster * PmonTokenomics.NFT_STAKING_POOL.value),
+                PmonTokenomics.STAKING_POOL.to_pct(),
+                int(total_booster * PmonTokenomics.STAKING_POOL.value),
+                PmonTokenomics.BURNED.to_pct(),
+                int(total_booster * PmonTokenomics.BURNED.value),
+            ))
 
     @staticmethod
     def error(update, context):
