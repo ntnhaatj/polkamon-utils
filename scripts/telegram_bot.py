@@ -113,8 +113,8 @@ class PmonTokenomics(Enum):
     # BURNED = 0.5
     # DEVELOPMENT = 0.1
     NFT_STAKING_POOL = 0.20
-    STAKING_POOL = 0.20
-    BURNED = 0.65
+    STAKING_POOL = 0
+    BURNED = 0
     DEVELOPMENT = 0
 
     def to_pct(self):
