@@ -204,9 +204,9 @@ class BotHandlers:
             "Open booster from last snapshot:\n\n"
             "{}\n\n"
             "Total: {:,}\n"
-            "NFT staking pool ({}%): {:,}\n"
-            "Staking pool ({}%): {:,}\n"
-            "Burned ({}%): {:,}".format(
+            "NFT staking pool ({}): {:,}\n"
+            "Staking pool ({}): {:,}\n"
+            "Burned ({}): {:,}".format(
                 "\n".join(booster_stats),
                 total_booster,
                 PmonTokenomics.NFT_STAKING_POOL.to_pct(),
