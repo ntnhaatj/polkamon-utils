@@ -109,8 +109,9 @@ def get_ref_links(meta: Metadata) -> tuple:
 
 class PmonTokenomics(Enum):
     NFT_STAKING_POOL = 0.25
-    STAKING_POOL = 0.1
-    BURNED = 0.65
+    STAKING_POOL = 0.15
+    BURNED = 0.5
+    DEVELOPMENT = 0.1
 
     def to_pct(self):
         return f"{self.value * 100}%"
@@ -206,7 +207,8 @@ class BotHandlers:
             "Total: {:,}\n"
             "NFT staking pool ({}): {:,}\n"
             "Staking pool ({}): {:,}\n"
-            "Burned ({}): {:,}".format(
+            "Burned ({}): {:,}\n"
+            "Development ({}): {:,}".format(
                 "\n".join(booster_stats),
                 total_booster,
                 PmonTokenomics.NFT_STAKING_POOL.to_pct(),
@@ -215,6 +217,8 @@ class BotHandlers:
                 int(total_booster * PmonTokenomics.STAKING_POOL.value),
                 PmonTokenomics.BURNED.to_pct(),
                 int(total_booster * PmonTokenomics.BURNED.value),
+                PmonTokenomics.DEVELOPMENT.to_pct(),
+                int(total_booster * PmonTokenomics.DEVELOPMENT.value),
             ))
 
     @staticmethod
