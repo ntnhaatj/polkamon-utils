@@ -7,7 +7,15 @@ import backoff
 METADATA_URL = "http://meta.polkamon.com/meta?id={id}"
 RANK_AND_SHARE = "https://pkm-collectorstaking.herokuapp.com/rankAndShare/{score}"
 LEADERBOARD = "https://pkm-collectorstaking.herokuapp.com/leaderboard?limit={limit}"
-OVERALL = "https://nft-tracker.net/_next/data/FYCcAwpjHdPYAgMShl2aN/collections/polychainmonsters/statistics.json?slug=polychainmonsters&tab=overall"
+OVERALL = "https://nft-tracker.net/_next/data/_gHjYQKhksFO8OZ-2Plqo/collections/polychainmonsters/statistics.json?slug=polychainmonsters&tab=overall"
+# PMONC_FILTER = "https://nft-tracker.net/api/assets/polychainmonsters?" \
+#                "limit=25&sort=attributes.Special:-1,token_id:1&offset=0&select=undefined" \
+#                "&filters=attributes.Background:Mountain%20Range," \
+#                "attributes.Horn:Wicked%20Spear," \
+#                "attributes.Type:Unidonkey," \
+#                "attributes.Glitter:Yes," \
+#                "attributes.Color:Blue"
+# https://pkm-collectorstaking.herokuapp.com/collectorScore?address=0xCDf1341953b08C1C4981a63938E2d770dB8AfF31&chain=bsc&cb=1630472298759
 
 
 @backoff.on_exception(backoff.expo,

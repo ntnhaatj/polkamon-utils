@@ -112,7 +112,7 @@ class Type(Traits):
     CHICK = "Unichick"
     FAIRY = "Unifairy"
     CURSED = "Unicursed"
-    TURTLE = "Uniturle"
+    TURTLE = "Uniturtle"
     AIR = "Uniair"
     KLES = "Unikles"
     BRANCH = "Unibranch"

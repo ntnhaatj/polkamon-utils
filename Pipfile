@@ -9,6 +9,9 @@ pytz = "*"
 termcolor = "*"
 python-telegram-bot = "*"
 backoff = "*"
+web3 = "*"
+tqdm = "*"
+telethon = "*"
 
 [dev-packages]
 
