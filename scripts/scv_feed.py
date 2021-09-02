@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime
 import web3_utils
 from enum import Enum
@@ -9,10 +10,10 @@ from utils import get_metadata
 from datatypes import Metadata, Horn, Color, Type
 
 # Enable logging
-log_filename = datetime.now().strftime('scvfeed_%Y%m%d_%H%M.log')
+log_filename = datetime.now().strftime('%Y%m%d_%H%M.log')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
-                    filename='scv_feed..log',
+                    filename=log_filename,
                     filemode='w')
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,19 @@ SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-MIN_SCORE = 100
-MIN_SCORE_PER_BNB = 2500
+
+
+@dataclass
+class Config:
+    MIN_SCORE: int = 200
+    MIN_SCORE_PER_BNB: int = 4000
+    MAX_PRICE_BNB: int = 10
+
+    def __str__(self):
+        return ", ".join([f"{i.name}={getattr(self, i.name)}" for i in self.__dataclass_fields__.values()])
+
+
+config = Config()
 
 
 class TradeSide(Enum):
@@ -74,8 +86,8 @@ def new_event_handler(e):
 
 class WorthToBuyReasonCode(Enum):
     NO = ""
-    HIGH_SCORE_PER_BNB = f"Greater {MIN_SCORE_PER_BNB} SPB"
-    SPECIAL = "Special"
+    HIGH_SCORE_PER_BNB = f"High Score Per BNB"
+    SPECIAL = f"Special"
     BLACK = "Black"
     RARE_ATTR_RARE_TYPES = "Diamond/Glitter Rare Types"
 
@@ -86,32 +98,38 @@ class WorthToBuyReasonCode(Enum):
         return True if self.value else False
 
 
+RARE_TYPES = (Type.AIR, Type.AQUA, Type.BRANCH, Type.KLES, Type.TURTLE, Type.DRAGON)
+
+
 def is_worth_buying(price: int, metadata: Metadata) -> WorthToBuyReasonCode:
     score = metadata.rarity_score
-    score_per_price = score / price * 1E18
+    price_in_bnb = price / 1E18
+
+    try:
+        color = Color.of(metadata.attributes.color)
+        horn = Horn.of(metadata.attributes.horn)
+        typ3 = Type.of(metadata.attributes.type)
+    except NotImplementedError:
+        return WorthToBuyReasonCode.NO
+
+    if (score < config.MIN_SCORE and typ3 not in RARE_TYPES) or price_in_bnb > config.MAX_PRICE_BNB:
+        return WorthToBuyReasonCode.NO
 
     # high rate score per bnb
-    if score > MIN_SCORE:
-        if score_per_price > MIN_SCORE_PER_BNB:
-            return WorthToBuyReasonCode.HIGH_SCORE_PER_BNB
+    score_per_bnb = score / price_in_bnb
+    if score_per_bnb > config.MIN_SCORE_PER_BNB:
+        return WorthToBuyReasonCode.HIGH_SCORE_PER_BNB
 
     # check all specials
     if metadata.attributes.special:
         return WorthToBuyReasonCode.SPECIAL
 
     # check all blacks
-    color = Color.of(metadata.attributes.color)
     if color == Color.BLACK:
         return WorthToBuyReasonCode.BLACK
 
-    try:
-        horn = Horn.of(metadata.attributes.horn)
-        typ3 = Type.of(metadata.attributes.type)
-    except NotImplementedError:
-        return WorthToBuyReasonCode.NO
     # check all diamonds or glitter with rare types
-    rare_types = (Type.AIR, Type.AQUA, Type.BRANCH, Type.KLES, Type.TURTLE, Type.DRAGON)
-    if typ3 in rare_types and (horn == Horn.DIAMOND_SPEAR
+    if typ3 in RARE_TYPES and (horn == Horn.DIAMOND_SPEAR
                                or metadata.attributes.glitter == "Yes"):
         return WorthToBuyReasonCode.RARE_ATTR_RARE_TYPES
 
@@ -121,7 +139,7 @@ def is_worth_buying(price: int, metadata: Metadata) -> WorthToBuyReasonCode:
 # https://core.telegram.org/bots/api#html-style
 def to_html(side, token_id, price, score, wtb: WorthToBuyReasonCode):
     url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{token_id}"
-    body = "{} {:.4f} BNB | score: {:,}".format(side, price / 1E18, score)
+    body = "{} {:.4f} BNB | score: {:,} | SPB: {:,}".format(side, price / 1E18, score, int(score / price * 1E18))
     delimiter = f"===={wtb}====\n"
     msg = f"{delimiter}<a href='{url}'>{body}</a>\n"
     return msg
@@ -129,8 +147,11 @@ def to_html(side, token_id, price, score, wtb: WorthToBuyReasonCode):
 
 def on_start_intro() -> str:
     header = "Starting SCV feed bot tracking"
-    conf = [f"  - {track}" for track in WorthToBuyReasonCode.__members__.values() if track]
-    return "{}\nTracking Configuration:\n{}".format(header, '\n'.join(conf))
+    base_conf = str(config)
+    tracking_conf = [f"  - {track}" for track in WorthToBuyReasonCode.__members__.values() if track]
+    return "{}\n" \
+           "Base config: {}\n" \
+           "Tracking Configuration:\n{}".format(header, base_conf, '\n'.join(tracking_conf))
 
 
 def main():

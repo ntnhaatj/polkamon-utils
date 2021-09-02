@@ -118,6 +118,17 @@ class Type(Traits):
     BRANCH = "Unibranch"
     AQUA = "Uniaqua"
     DRAGON = "Unidragon"
+    BABY_DONKEY = "Baby Unidonkey"
+    BABY_SHEEP = "Baby Unisheep"
+    BABY_CHICK = "Baby Unichick"
+    BABY_FAIRY = "Baby Unifairy"
+    BABY_CURSED = "Baby Unicursed"
+    BABY_TURTLE = "Baby Uniturtle"
+    BABY_AIR = "Baby Uniair"
+    BABY_KLES = "Baby Unikles"
+    BABY_BRANCH = "Baby Unibranch"
+    BABY_AQUA = "Baby Uniaqua"
+    BABY_DRAGON = "Baby Unidragon"
 
 
 class Color(Traits):
