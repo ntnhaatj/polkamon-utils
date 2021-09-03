@@ -13,11 +13,11 @@ from scvfeed.models import Rule
 from scvfeed.config import rules
 
 # Enable logging
-log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d_%H%M.log')
+log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d.log')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
                     filename=log_filename,
-                    filemode='a')
+                    filemode='a+')
 logger = logging.getLogger(__name__)
 
 SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
@@ -87,12 +87,25 @@ def get_matched_rule(price: int, metadata: Metadata, rul3s: Iterable[Rule]) -> R
     return None
 
 
+def get_color_by_spb(spb: int) -> str:
+    if spb < 4000:
+        return "🟢"
+    elif spb < 7000:
+        return "🔵"
+    elif spb < 10000:
+        return "🟡"
+    else:
+        return "🟣"
+
+
 # https://core.telegram.org/bots/api#html-style
 def to_html(side, token_id, price, score, matched_rule: Rule):
+    score_per_bnb = int(score / price * 1E18)
     url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{token_id}"
-    body = "{} {:.4f} BNB | score: {:,} | SPB: {:,}".format(side, price / 1E18, score, int(score / price * 1E18))
+    desc = "{} {:.4f} BNB | score: {:,}".format(side, price / 1E18, score)
     delimiter = f"===={matched_rule.name}====\n"
-    msg = f"{delimiter}<a href='{url}'>{body}</a>\n"
+    spb_msg = "SPB: {} {:,}".format(get_color_by_spb(score_per_bnb), score_per_bnb)
+    msg = f"{delimiter}<a href='{url}'>{desc}</a>\n{spb_msg}"
     return msg
 
 
