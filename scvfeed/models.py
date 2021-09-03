@@ -19,8 +19,8 @@ class ScvFeedType(Enum):
 
 class ScvFeedColor(Enum):
     ALL = ()
-    RARE = (Color.YELLOW,)
-    SUPER_RARE = (Color.BLACK, Color.PURPLE)
+    RARE = (Color.YELLOW, Color.PURPLE)
+    SUPER_RARE = (Color.BLACK,)
 
     @classmethod
     def of(cls, i: str):
