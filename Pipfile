@@ -12,6 +12,7 @@ backoff = "*"
 web3 = "*"
 tqdm = "*"
 telethon = "*"
+pytest = "*"
 
 [dev-packages]
 

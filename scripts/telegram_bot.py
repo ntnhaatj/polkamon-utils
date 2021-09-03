@@ -103,7 +103,7 @@ def get_ref_links(meta: Metadata) -> tuple:
         url,
         type=meta.attributes.type,
         horn=meta.attributes.horn,
-        glitter=meta.attributes.glitter,
+        glitter='Yes' if meta.attributes.glitter else 'No',
         color=meta.attributes.color), REF_URLS))
 
 

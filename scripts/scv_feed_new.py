@@ -1,3 +1,4 @@
+from typing import Iterable
 import os
 import logging
 import time
@@ -8,13 +9,15 @@ from enum import Enum
 from telethon import TelegramClient
 from utils import get_metadata
 from datatypes import Metadata, Horn, Color, Type
+from scvfeed.models import Rule
+from scvfeed.config import rules
 
 # Enable logging
 log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d_%H%M.log')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
                     filename=log_filename,
-                    filemode='w')
+                    filemode='a')
 logger = logging.getLogger(__name__)
 
 SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
@@ -24,20 +27,6 @@ SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-
-
-@dataclass
-class Config:
-    MIN_SCORE: int = 200
-    MIN_SCORE_PER_BNB: int = 4000
-    MAX_PRICE_BNB_SPECIAL_AND_BLACK: int = 10
-    MAX_PRICE_BNB: int = 3
-
-    def __str__(self):
-        return ", ".join([f"{i.name}={getattr(self, i.name)}" for i in self.__dataclass_fields__.values()])
-
-
-config = Config()
 
 
 class TradeSide(Enum):
@@ -85,76 +74,32 @@ def new_event_handler(e):
         return None
 
 
-class WorthToBuyReasonCode(Enum):
-    NO = ""
-    HIGH_SCORE_PER_BNB = f"High Score Per BNB"
-    SPECIAL = f"Special"
-    BLACK = "Black"
-    RARE_ATTR_RARE_TYPES = "Diamond/Glitter Rare Types"
-    BABY_GLITTER_AND_CHEAP = "Baby Glitter/Cheap"
-
-    def __str__(self):
-        return self.value
-
-    def __bool__(self):
-        return True if self.value else False
-
-
-RARE_TYPES = (Type.AIR, Type.AQUA, Type.BRANCH, Type.KLES, Type.TURTLE, Type.DRAGON)
-
-
-def is_worth_buying(price: int, metadata: Metadata) -> WorthToBuyReasonCode:
-    score = metadata.rarity_score
+def get_matched_rule(price: int, metadata: Metadata, rul3s: Iterable[Rule]) -> Rule:
     price_in_bnb = price / 1E18
 
-    # high rate score per bnb
-    score_per_bnb = score / price_in_bnb
-    if score_per_bnb > config.MIN_SCORE_PER_BNB:
-        return WorthToBuyReasonCode.HIGH_SCORE_PER_BNB
-
-    # check all specials
-    if metadata.attributes.special:
-        if price_in_bnb < config.MAX_PRICE_BNB_SPECIAL_AND_BLACK:
-            return WorthToBuyReasonCode.SPECIAL
-        else:
-            return WorthToBuyReasonCode.NO
-
-    # check all blacks
-    color = Color.of(metadata.attributes.color)
-    if color == Color.BLACK and price_in_bnb < config.MAX_PRICE_BNB_SPECIAL_AND_BLACK:
-        return WorthToBuyReasonCode.BLACK
-
-    typ3 = Type.of(metadata.attributes.type)
-    horn = Horn.of(metadata.attributes.horn)
-    # check all diamonds or glitter with rare types
-    if typ3 in RARE_TYPES \
-            and (horn == Horn.DIAMOND_SPEAR or metadata.attributes.glitter)\
-            and price_in_bnb < config.MAX_PRICE_BNB:
-        return WorthToBuyReasonCode.RARE_ATTR_RARE_TYPES
-
-    if "Baby" in typ3.value and (metadata.attributes.glitter
-                                 or score_per_bnb > config.MIN_SCORE_PER_BNB):
-        return WorthToBuyReasonCode.BABY_GLITTER_AND_CHEAP
-
-    return WorthToBuyReasonCode.NO
+    for rule in rul3s:
+        try:
+            if rule.is_worth_buying(price_in_bnb, metadata):
+                return rule
+        except Exception as e:
+            logger.error(f"encountered exception {rule}\n{e}")
+            pass
+    return None
 
 
 # https://core.telegram.org/bots/api#html-style
-def to_html(side, token_id, price, score, wtb: WorthToBuyReasonCode):
+def to_html(side, token_id, price, score, matched_rule: Rule):
     url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{token_id}"
     body = "{} {:.4f} BNB | score: {:,} | SPB: {:,}".format(side, price / 1E18, score, int(score / price * 1E18))
-    delimiter = f"===={wtb}====\n"
+    delimiter = f"===={matched_rule.name}====\n"
     msg = f"{delimiter}<a href='{url}'>{body}</a>\n"
     return msg
 
 
 def on_start_intro() -> str:
     header = "Starting SCV feed bot tracking"
-    base_conf = str(config)
-    tracking_conf = [f"  - {track}" for track in WorthToBuyReasonCode.__members__.values() if track]
-    return "{}\n" \
-           "Base config: {}\n" \
-           "Tracking Configuration:\n{}".format(header, base_conf, '\n'.join(tracking_conf))
+    body = "Tracking Configuration:\n- {}".format("\n- ".join(map(lambda r: str(r), rules)))
+    return f"{header}\n{body}"
 
 
 def main():
@@ -170,14 +115,14 @@ def main():
                     if side == TradeSide.SELL:
                         metadata = get_metadata(token_id)
                         meta = Metadata.from_metadata(metadata)
-                        wtb = is_worth_buying(price, meta)
-                        if wtb:
+                        matched_rule = get_matched_rule(price, meta, rules)
+                        if matched_rule:
                             try:
-                                message = to_html(side, token_id, price, meta.rarity_score, wtb)
+                                message = to_html(side, token_id, price, meta.rarity_score, matched_rule)
                                 bot.loop.run_until_complete(bot.send_message("scvfeed", message, parse_mode='html'))
                             except Exception as e:
                                 logging.error(e)
-                time.sleep(2)
+                time.sleep(0.2)
             except (ValueError, KeyError):
                 pass
             except (KeyboardInterrupt, Exception) as e:

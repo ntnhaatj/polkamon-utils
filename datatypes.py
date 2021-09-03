@@ -30,7 +30,7 @@ class Attribute:
     type: str
     horn: str
     color: str
-    glitter: str
+    glitter: bool
     special: bool
 
     @classmethod
@@ -51,7 +51,7 @@ class Attribute:
             color=attributes['Color'],
             horn=attributes['Horn'],
             type=attributes['Type'],
-            glitter=attributes['Glitter'],
+            glitter=(attributes['Glitter'] == 'Yes'),
             special=(attributes['Special'] == 'Yes'))
 
 
