@@ -66,11 +66,17 @@ class Metadata:
 
     @classmethod
     def from_metadata(cls, metadata: dict):
+        try:
+            rarity = Rarity.from_metadata(metadata)
+        except KeyError:
+            # Colchian Unidragon
+            rarity = Rarity(horn=0, color=0, background=0, glitter=0, type=0)
+
         return cls(id=metadata['id'],
                    name=metadata['name'],
                    image=metadata['image'],
                    attributes=Attribute.from_metadata(metadata),
-                   rarity=Rarity.from_metadata(metadata))
+                   rarity=rarity)
 
     @property
     def rarity_pct(self) -> float:

@@ -10,7 +10,7 @@ from utils import get_metadata
 from datatypes import Metadata, Horn, Color, Type
 
 # Enable logging
-log_filename = datetime.now().strftime('%Y%m%d_%H%M.log')
+log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d_%H%M.log')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
                     filename=log_filename,
@@ -30,7 +30,8 @@ bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 class Config:
     MIN_SCORE: int = 200
     MIN_SCORE_PER_BNB: int = 4000
-    MAX_PRICE_BNB: int = 10
+    MAX_PRICE_BNB_SPECIAL_AND_BLACK: int = 10
+    MAX_PRICE_BNB: int = 3
 
     def __str__(self):
         return ", ".join([f"{i.name}={getattr(self, i.name)}" for i in self.__dataclass_fields__.values()])
@@ -90,6 +91,7 @@ class WorthToBuyReasonCode(Enum):
     SPECIAL = f"Special"
     BLACK = "Black"
     RARE_ATTR_RARE_TYPES = "Diamond/Glitter Rare Types"
+    BABY_GLITTER_AND_CHEAP = "Baby Glitter/Cheap"
 
     def __str__(self):
         return self.value
@@ -105,16 +107,6 @@ def is_worth_buying(price: int, metadata: Metadata) -> WorthToBuyReasonCode:
     score = metadata.rarity_score
     price_in_bnb = price / 1E18
 
-    try:
-        color = Color.of(metadata.attributes.color)
-        horn = Horn.of(metadata.attributes.horn)
-        typ3 = Type.of(metadata.attributes.type)
-    except NotImplementedError:
-        return WorthToBuyReasonCode.NO
-
-    if (score < config.MIN_SCORE and typ3 not in RARE_TYPES) or price_in_bnb > config.MAX_PRICE_BNB:
-        return WorthToBuyReasonCode.NO
-
     # high rate score per bnb
     score_per_bnb = score / price_in_bnb
     if score_per_bnb > config.MIN_SCORE_PER_BNB:
@@ -122,16 +114,27 @@ def is_worth_buying(price: int, metadata: Metadata) -> WorthToBuyReasonCode:
 
     # check all specials
     if metadata.attributes.special:
-        return WorthToBuyReasonCode.SPECIAL
+        if price_in_bnb < config.MAX_PRICE_BNB_SPECIAL_AND_BLACK:
+            return WorthToBuyReasonCode.SPECIAL
+        else:
+            return WorthToBuyReasonCode.NO
 
     # check all blacks
-    if color == Color.BLACK:
+    color = Color.of(metadata.attributes.color)
+    if color == Color.BLACK and price_in_bnb < config.MAX_PRICE_BNB_SPECIAL_AND_BLACK:
         return WorthToBuyReasonCode.BLACK
 
+    typ3 = Type.of(metadata.attributes.type)
+    horn = Horn.of(metadata.attributes.horn)
     # check all diamonds or glitter with rare types
-    if typ3 in RARE_TYPES and (horn == Horn.DIAMOND_SPEAR
-                               or metadata.attributes.glitter == "Yes"):
+    if typ3 in RARE_TYPES \
+            and (horn == Horn.DIAMOND_SPEAR or metadata.attributes.glitter == "Yes")\
+            and price_in_bnb < config.MAX_PRICE_BNB:
         return WorthToBuyReasonCode.RARE_ATTR_RARE_TYPES
+
+    if "Baby" in typ3.value and (metadata.attributes.glitter == "Yes"
+                                 or score_per_bnb > config.MIN_SCORE_PER_BNB):
+        return WorthToBuyReasonCode.BABY_GLITTER_AND_CHEAP
 
     return WorthToBuyReasonCode.NO
 
@@ -177,9 +180,10 @@ def main():
                 time.sleep(2)
             except (ValueError, KeyError):
                 pass
-            except (KeyboardInterrupt, Exception):
-                bot.loop.run_until_complete(bot.send_message("scvfeed", "BOT IS SHUTTING DOWN"))
+            except (KeyboardInterrupt, Exception) as e:
+                bot.loop.run_until_complete(bot.send_message("scvfeed", f"BOT IS SHUTTING DOWN...\nReason: {e}"))
                 bot.disconnect()
+                logging.error(e)
                 logging.info("graceful shutdown")
                 break
 
