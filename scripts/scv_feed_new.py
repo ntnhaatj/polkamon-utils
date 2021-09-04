@@ -20,6 +20,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     filemode='a+')
 logger = logging.getLogger(__name__)
 
+TELEGRAM_CHAT_ID = -1001597613597
 SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
 
 # get your api_id, api_hash, token
@@ -110,41 +111,64 @@ def to_html(side, token_id, price, score, matched_rule: Rule):
 
 
 def on_start_intro() -> str:
-    header = "Starting SCV feed bot tracking"
-    body = "Tracking Configuration:\n- {}".format("\n- ".join(map(lambda r: str(r), rules)))
+    header = "Start earning money mode"
+    body = "Tracking configuration:\n- {}".format("\n- ".join(map(lambda r: str(r), rules)))
     return f"{header}\n{body}"
+
+
+def send_msg(tele_bot, msg, parse_mode=None):
+    tele_bot.loop.run_until_complete(tele_bot.send_message(TELEGRAM_CHAT_ID, msg, parse_mode=parse_mode))
+
+
+def handle_new_entries(evt_filter):
+    for e in evt_filter.get_new_entries():
+        if not pmon_contract(e):
+            continue
+        side, token_id, price = new_event_handler(e)
+        if side == TradeSide.SELL:
+            try:
+                metadata = get_metadata(token_id)
+                meta = Metadata.from_metadata(metadata)
+                matched_rule = get_matched_rule(price, meta, rules)
+                if matched_rule:
+                    yield side, meta, price, matched_rule
+            except Exception as e:
+                logger.error(f"could not parse metadata {token_id}: {e}")
+                continue
 
 
 def main():
     bot = TelegramClient('session', api_id, api_hash).start(bot_token=bot_token)
-    bot.loop.run_until_complete(bot.send_message("scvfeed", on_start_intro()))
-    with bot:
-        while True:
-            try:
-                for e in scv_filter_event.get_new_entries():
-                    if not pmon_contract(e):
-                        continue
-                    side, token_id, price = new_event_handler(e)
-                    if side == TradeSide.SELL:
-                        metadata = get_metadata(token_id)
-                        meta = Metadata.from_metadata(metadata)
-                        matched_rule = get_matched_rule(price, meta, rules)
-                        if matched_rule:
-                            try:
-                                message = to_html(side, token_id, price, meta.rarity_score, matched_rule)
-                                bot.loop.run_until_complete(bot.send_message("scvfeed", message, parse_mode='html'))
-                            except Exception as e:
-                                logging.error(e)
-                time.sleep(0.2)
-            except (ValueError, KeyError):
-                pass
-            except (KeyboardInterrupt, Exception) as e:
-                bot.loop.run_until_complete(bot.send_message("scvfeed", f"BOT IS SHUTTING DOWN...\nReason: {e}"))
-                bot.disconnect()
-                logging.error(e)
-                logging.info("graceful shutdown")
-                break
+    send_msg(bot, on_start_intro())
+    while bot.is_connected():
+        try:
+            for side, meta, price, matched_rule in handle_new_entries(scv_filter_event):
+                logger.info(f"{meta.id} matched rule {matched_rule}")
+                try:
+                    send_msg(bot,
+                             to_html(side, meta.id, price, meta.rarity_score, matched_rule),
+                             parse_mode='html')
+                except Exception as e:
+                    logging.error(e)
+            time.sleep(0.2)
+
+        except ValueError:
+            pass
+
+        except KeyboardInterrupt as e:
+            send_msg(bot, f"BOT IS SHUTTING DOWN...\nReason: {e}")
+            bot.disconnect()
+            raise KeyboardInterrupt from e
+
+        except Exception:
+            continue
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+        except KeyboardInterrupt as e:
+            logging.error(e)
+            logging.info("graceful shutdown")
+            break

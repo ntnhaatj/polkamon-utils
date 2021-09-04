@@ -42,5 +42,5 @@ rules = (
          type=ScvFeedType.BABY_SUPER_RARE,
          glitter=True,
          max_price_bnb=20,
-         min_score_per_bnb=1000)
+         min_score_per_bnb=500)
 )

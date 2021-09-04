@@ -66,7 +66,7 @@ class RulesTest(unittest.TestCase):
                                                        "value": 1630614938},
                                                       {"display_type": "number", "trait_type": "Booster",
                                                        "value": 10000000430090}]})
-        matched_rule = get_matched_rule(2*int(1E18), meta, rules)
+        matched_rule = get_matched_rule(2 * int(1E18), meta, rules)
         assert matched_rule != None
         assert matched_rule.name == 'GLITTER RARE'
 
@@ -107,6 +107,34 @@ class RulesTest(unittest.TestCase):
                                                        "value": 1630438738},
                                                       {"display_type": "number", "trait_type": "Booster",
                                                        "value": 10000000388986}]})
-        matched_rule = get_matched_rule(int(3.95*1E18), meta, rules)
+        matched_rule = get_matched_rule(int(3.95 * 1E18), meta, rules)
         assert matched_rule != None
         assert matched_rule.name == 'ALL BLACKS'
+
+    def test_worth_buying_baby_glitter(self):
+        rules = (
+            Rule(name='GLITTER SR BABY',
+                 type=ScvFeedType.BABY_SUPER_RARE,
+                 glitter=True,
+                 max_price_bnb=20,
+                 min_score_per_bnb=500),
+        )
+        meta = Metadata.from_metadata({"id": "10001336587",
+                                       "image": "https://assets.polkamon.com/images/Unimons_T17C04H01B05G01.jpg",
+                                       "name": "Baby Unichick",
+                                       "initialProbabilities": {"horn": 1, "color": 0.05, "background": 1,
+                                                                "glitter": 0.01, "type": 0.015},
+                                       "attributes": [{"trait_type": "Type", "value": "Baby Unichick"},
+                                                      {"trait_type": "Horn", "value": "Baby Horn"},
+                                                      {"trait_type": "Color", "value": "Purple"},
+                                                      {"trait_type": "Background", "value": "Green Gardens"},
+                                                      {"trait_type": "Opening Network", "value": "Binance Smart Chain"},
+                                                      {"trait_type": "Glitter", "value": "Yes"},
+                                                      {"trait_type": "Special", "value": "No"},
+                                                      {"display_type": "date", "trait_type": "Birthday",
+                                                       "value": 1630667240},
+                                                      {"display_type": "number", "trait_type": "Booster",
+                                                       "value": 10000000445529}]})
+        matched_rule = get_matched_rule(int(5.5 * 1E18), meta, rules)
+        assert matched_rule != None
+        assert matched_rule.name == 'GLITTER SR BABY'
