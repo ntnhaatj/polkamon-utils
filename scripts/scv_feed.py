@@ -1,43 +1,38 @@
+from typing import Iterable
 import os
 import logging
 import time
-from dataclasses import dataclass
+import requests
+import backoff
 from datetime import datetime
 import web3_utils
 from enum import Enum
-from telethon import TelegramClient
 from utils import get_metadata
-from datatypes import Metadata, Horn, Color, Type
+from datatypes import Metadata
+from scvfeed.models import Rule
+from scvfeed.config import rules
+import threading
+import queue
 
 # Enable logging
-log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d_%H%M.log')
+log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d.log')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
                     filename=log_filename,
-                    filemode='w')
+                    filemode='a+')
 logger = logging.getLogger(__name__)
 
+TELEGRAM_CHAT_ID = -1001597613597
 SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
+
+# notification pool
+messages = queue.Queue()
 
 # get your api_id, api_hash, token
 # from telegram as described above
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-
-
-@dataclass
-class Config:
-    MIN_SCORE: int = 200
-    MIN_SCORE_PER_BNB: int = 4000
-    MAX_PRICE_BNB_SPECIAL_AND_BLACK: int = 10
-    MAX_PRICE_BNB: int = 3
-
-    def __str__(self):
-        return ", ".join([f"{i.name}={getattr(self, i.name)}" for i in self.__dataclass_fields__.values()])
-
-
-config = Config()
 
 
 class TradeSide(Enum):
@@ -85,108 +80,123 @@ def new_event_handler(e):
         return None
 
 
-class WorthToBuyReasonCode(Enum):
-    NO = ""
-    HIGH_SCORE_PER_BNB = f"High Score Per BNB"
-    SPECIAL = f"Special"
-    BLACK = "Black"
-    RARE_ATTR_RARE_TYPES = "Diamond/Glitter Rare Types"
-    BABY_GLITTER_AND_CHEAP = "Baby Glitter/Cheap"
-
-    def __str__(self):
-        return self.value
-
-    def __bool__(self):
-        return True if self.value else False
-
-
-RARE_TYPES = (Type.AIR, Type.AQUA, Type.BRANCH, Type.KLES, Type.TURTLE, Type.DRAGON)
-
-
-def is_worth_buying(price: int, metadata: Metadata) -> WorthToBuyReasonCode:
-    score = metadata.rarity_score
+def get_matched_rule(price: int, metadata: Metadata, rul3s: Iterable[Rule]) -> Rule:
     price_in_bnb = price / 1E18
 
-    # high rate score per bnb
-    score_per_bnb = score / price_in_bnb
-    if score_per_bnb > config.MIN_SCORE_PER_BNB:
-        return WorthToBuyReasonCode.HIGH_SCORE_PER_BNB
+    for rule in rul3s:
+        try:
+            if rule.is_worth_buying(price_in_bnb, metadata):
+                return rule
+        except Exception as e:
+            logger.error(f"encountered exception {rule}\n{e}")
+            pass
+    return None
 
-    # check all specials
-    if metadata.attributes.special:
-        if price_in_bnb < config.MAX_PRICE_BNB_SPECIAL_AND_BLACK:
-            return WorthToBuyReasonCode.SPECIAL
-        else:
-            return WorthToBuyReasonCode.NO
 
-    # check all blacks
-    color = Color.of(metadata.attributes.color)
-    if color == Color.BLACK and price_in_bnb < config.MAX_PRICE_BNB_SPECIAL_AND_BLACK:
-        return WorthToBuyReasonCode.BLACK
-
-    typ3 = Type.of(metadata.attributes.type)
-    horn = Horn.of(metadata.attributes.horn)
-    # check all diamonds or glitter with rare types
-    if typ3 in RARE_TYPES \
-            and (horn == Horn.DIAMOND_SPEAR or metadata.attributes.glitter)\
-            and price_in_bnb < config.MAX_PRICE_BNB:
-        return WorthToBuyReasonCode.RARE_ATTR_RARE_TYPES
-
-    if "Baby" in typ3.value and (metadata.attributes.glitter
-                                 or score_per_bnb > config.MIN_SCORE_PER_BNB):
-        return WorthToBuyReasonCode.BABY_GLITTER_AND_CHEAP
-
-    return WorthToBuyReasonCode.NO
+def get_color_by_spb(spb: int) -> str:
+    if spb < 4000:
+        return "🟢"
+    elif spb < 7000:
+        return "🔵"
+    elif spb < 10000:
+        return "🟡"
+    else:
+        return "🟣"
 
 
 # https://core.telegram.org/bots/api#html-style
-def to_html(side, token_id, price, score, wtb: WorthToBuyReasonCode):
+def to_html(side, token_id, price, score, matched_rule: Rule):
+    score_per_bnb = int(score / price * 1E18)
     url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{token_id}"
-    body = "{} {:.4f} BNB | score: {:,} | SPB: {:,}".format(side, price / 1E18, score, int(score / price * 1E18))
-    delimiter = f"===={wtb}====\n"
-    msg = f"{delimiter}<a href='{url}'>{body}</a>\n"
+    desc = "{} {:.4f} BNB | score: {:,}".format(side, price / 1E18, score)
+    delimiter = f"===={matched_rule.name}====\n"
+    spb_msg = "SPB: {} {:,}".format(get_color_by_spb(score_per_bnb), score_per_bnb)
+    msg = f"{delimiter}<a href='{url}'>{desc}</a>\n{spb_msg}"
     return msg
 
 
 def on_start_intro() -> str:
-    header = "Starting SCV feed bot tracking"
-    base_conf = str(config)
-    tracking_conf = [f"  - {track}" for track in WorthToBuyReasonCode.__members__.values() if track]
-    return "{}\n" \
-           "Base config: {}\n" \
-           "Tracking Configuration:\n{}".format(header, base_conf, '\n'.join(tracking_conf))
+    header = "Start earning money mode"
+    body = "Tracking configuration:\n- {}".format("\n- ".join(map(lambda r: str(r), rules)))
+    return f"{header}\n{body}"
+
+
+@backoff.on_exception(backoff.constant,
+                      interval=1,
+                      max_tries=3,
+                      exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+def send_msg(msg, parse_mode=''):
+    params = (
+        f'chat_id={TELEGRAM_CHAT_ID}',
+        f'text={msg}',
+        f'parse_mode={parse_mode}'
+    )
+    requests.get("https://api.telegram.org/bot{}/sendMessage?{}".format(bot_token, '&'.join(params)))
+
+
+class Notifier(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+
+    def run(self) -> None:
+        while True:
+            while not messages.empty():
+                msg = messages.get_nowait()
+                try:
+                    send_msg(msg, parse_mode='html')
+                except Exception as e:
+                    logger.error(f"failed to send {msg}: {e}")
+                    pass
+            time.sleep(0.1)
+
+
+def handle_new_entries(evt_filter):
+    for e in evt_filter.get_new_entries():
+        if not pmon_contract(e):
+            continue
+        side, token_id, price = new_event_handler(e)
+        if side == TradeSide.SELL:
+            try:
+                metadata = get_metadata(token_id)
+                meta = Metadata.from_metadata(metadata)
+                matched_rule = get_matched_rule(price, meta, rules)
+                if matched_rule:
+                    yield side, meta, price, matched_rule
+            except Exception as e:
+                logger.error(f"could not parse metadata {token_id}: {e}")
+                continue
 
 
 def main():
-    bot = TelegramClient('session', api_id, api_hash).start(bot_token=bot_token)
-    bot.loop.run_until_complete(bot.send_message("scvfeed", on_start_intro()))
-    with bot:
-        while True:
-            try:
-                for e in scv_filter_event.get_new_entries():
-                    if not pmon_contract(e):
-                        continue
-                    side, token_id, price = new_event_handler(e)
-                    if side == TradeSide.SELL:
-                        metadata = get_metadata(token_id)
-                        meta = Metadata.from_metadata(metadata)
-                        wtb = is_worth_buying(price, meta)
-                        if wtb:
-                            try:
-                                message = to_html(side, token_id, price, meta.rarity_score, wtb)
-                                bot.loop.run_until_complete(bot.send_message("scvfeed", message, parse_mode='html'))
-                            except Exception as e:
-                                logging.error(e)
-                time.sleep(2)
-            except (ValueError, KeyError):
-                pass
-            except (KeyboardInterrupt, Exception) as e:
-                bot.loop.run_until_complete(bot.send_message("scvfeed", f"BOT IS SHUTTING DOWN...\nReason: {e}"))
-                bot.disconnect()
-                logging.error(e)
-                logging.info("graceful shutdown")
-                break
+    messages.put_nowait(on_start_intro())
+    while True:
+        try:
+            for side, meta, price, matched_rule in handle_new_entries(scv_filter_event):
+                logger.info(f"{meta.id} matched rule {matched_rule}")
+                try:
+                    messages.put_nowait(to_html(side, meta.id, price, meta.rarity_score, matched_rule))
+                except Exception as e:
+                    logging.error(e)
+            time.sleep(0.2)
+        except ValueError:
+            pass
+
+        except KeyboardInterrupt as e:
+            messages.put_nowait(f"BOT IS SHUTTING DOWN...\nReason: {e}")
+            raise KeyboardInterrupt from e
+
+        except Exception:
+            continue
 
 
 if __name__ == '__main__':
-    main()
+    telegram_thread = Notifier("telegram")
+    telegram_thread.start()
+    while True:
+        try:
+            main()
+        except KeyboardInterrupt as e:
+            logging.error(e)
+            logging.info("graceful shutdown")
+            break

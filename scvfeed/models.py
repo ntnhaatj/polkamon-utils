@@ -8,6 +8,7 @@ class ScvFeedType(Enum):
     RARE = (Type.BRANCH, Type.TURTLE, Type.AIR, Type.KLES)
     SUPER_RARE = (Type.DRAGON, Type.AQUA)
     BABY_SUPER_RARE = (Type.BABY_AQUA, Type.BABY_BRANCH, Type.BABY_CHICK, Type.BABY_FAIRY,)
+    CUSTOM = (Type.DRAGON, )
 
     @classmethod
     def of(cls, i: str):

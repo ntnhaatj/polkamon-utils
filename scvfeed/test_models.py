@@ -138,3 +138,58 @@ class RulesTest(unittest.TestCase):
         matched_rule = get_matched_rule(int(5.5 * 1E18), meta, rules)
         assert matched_rule != None
         assert matched_rule.name == 'GLITTER SR BABY'
+
+    def test_worth_buying_glitter_rare(self):
+        rules = (
+            Rule(name='GLITTER RARE',
+                 glitter=True,
+                 type=ScvFeedType.RARE,
+                 max_price_bnb=20,
+                 min_score_per_bnb=4000),
+        )
+        meta = Metadata.from_metadata({"boosterId": 10000000440771, "id": "10001322311",
+                                       "image": "https://assets.polkamon.com/images/Unimons_T04C05H08B04G01.jpg",
+                                       "name": "Uniturtle",
+                                       "initialProbabilities": {"horn": 0.16, "color": 0.2, "background": 1,
+                                                                "glitter": 0.01, "type": 0.06},
+                                       "attributes": [{"trait_type": "Type", "value": "Uniturtle"},
+                                                      {"trait_type": "Horn", "value": "Candy Cane"},
+                                                      {"trait_type": "Color", "value": "Red"},
+                                                      {"trait_type": "Background", "value": "Mountain Range"},
+                                                      {"trait_type": "Opening Network", "value": "Binance Smart Chain"},
+                                                      {"trait_type": "Glitter", "value": "Yes"},
+                                                      {"trait_type": "Special", "value": "No"},
+                                                      {"display_type": "date", "trait_type": "Birthday",
+                                                       "value": 1630645436},
+                                                      {"display_type": "number", "trait_type": "Booster",
+                                                       "value": 10000000440771}]})
+        matched_rule = get_matched_rule(int(0.1 * 1E18), meta, rules)
+        assert matched_rule != None
+        assert matched_rule.name == 'GLITTER RARE'
+
+    def test_(self):
+        from scvfeed.config import rules
+        meta = Metadata.from_metadata({"boosterId": 10000000396048, "id": "10001188144",
+                                       "txHash": "0x3294acafdef60787efe58770fb82cb99cece3235f6c4096abcc4b509f6cd9d87",
+                                       "randomNumber": "0x4b344c081024b20a4b961a7d29ca16be2742fd825b47a558254da23df32a154f",
+                                       "image": "https://assets.polkamon.com/images/Unimons_T12C05H01B05G00.jpg",
+                                       "external_url": "https://polkamon.com/polkamon/T12C05H01B05G00",
+                                       "description": "Said to be born from magic, the Baby Unifairy belongs to the most wonderful and enchanting family of Polymon. Before growing the majestic wings of their parents, these babies thrive in a tranquil environment where they can hone their magical abilities in peace.",
+                                       "name": "Baby Unifairy",
+                                       "initialProbabilities": {"horn": 1, "color": 0.2, "background": 1,
+                                                                "glitter": 0.99, "type": 0.015},
+                                       "attributes": [{"trait_type": "Type", "value": "Baby Unifairy"},
+                                                      {"trait_type": "Horn", "value": "Baby Horn"},
+                                                      {"trait_type": "Color", "value": "Red"},
+                                                      {"trait_type": "Background", "value": "Green Gardens"},
+                                                      {"trait_type": "Opening Network", "value": "Binance Smart Chain"},
+                                                      {"trait_type": "Glitter", "value": "No"},
+                                                      {"trait_type": "Special", "value": "No"},
+                                                      {"display_type": "date", "trait_type": "Birthday",
+                                                       "value": 1630481910},
+                                                      {"display_type": "number", "trait_type": "Booster",
+                                                       "value": 10000000396048}],
+                                       "opening_network": "Binance Smart Chain", "background_color": "FFFFFF",
+                                       "animation_url": "https://assets.polkamon.com/videos/Unimons_T12C05H01B05G00.mp4"})
+        matched_rule = get_matched_rule(int(0.1 * 1E18), meta, rules)
+        print(matched_rule)

@@ -2,15 +2,17 @@ from typing import Iterable
 import os
 import logging
 import time
-from dataclasses import dataclass
+import requests
+import backoff
 from datetime import datetime
 import web3_utils
 from enum import Enum
-from telethon import TelegramClient
 from utils import get_metadata
-from datatypes import Metadata, Horn, Color, Type
+from datatypes import Metadata
 from scvfeed.models import Rule
 from scvfeed.config import rules
+import threading
+import queue
 
 # Enable logging
 log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d.log')
@@ -22,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 TELEGRAM_CHAT_ID = -1001597613597
 SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
+
+# notification pool
+messages = queue.Queue()
 
 # get your api_id, api_hash, token
 # from telegram as described above
@@ -116,8 +121,34 @@ def on_start_intro() -> str:
     return f"{header}\n{body}"
 
 
-def send_msg(tele_bot, msg, parse_mode=None):
-    tele_bot.loop.run_until_complete(tele_bot.send_message(TELEGRAM_CHAT_ID, msg, parse_mode=parse_mode))
+@backoff.on_exception(backoff.constant,
+                      interval=1,
+                      max_tries=3,
+                      exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+def send_msg(msg, parse_mode=''):
+    params = (
+        f'chat_id={TELEGRAM_CHAT_ID}',
+        f'text={msg}',
+        f'parse_mode={parse_mode}'
+    )
+    requests.get("https://api.telegram.org/bot{}/sendMessage?{}".format(bot_token, '&'.join(params)))
+
+
+class Notifier(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+
+    def run(self) -> None:
+        while True:
+            while not messages.empty():
+                msg = messages.get_nowait()
+                try:
+                    send_msg(msg, parse_mode='html')
+                except Exception as e:
+                    logger.error(f"failed to send {msg}: {e}")
+                    pass
+            time.sleep(0.1)
 
 
 def handle_new_entries(evt_filter):
@@ -138,26 +169,21 @@ def handle_new_entries(evt_filter):
 
 
 def main():
-    bot = TelegramClient('session', api_id, api_hash).start(bot_token=bot_token)
-    send_msg(bot, on_start_intro())
-    while bot.is_connected():
+    messages.put_nowait(on_start_intro())
+    while True:
         try:
             for side, meta, price, matched_rule in handle_new_entries(scv_filter_event):
                 logger.info(f"{meta.id} matched rule {matched_rule}")
                 try:
-                    send_msg(bot,
-                             to_html(side, meta.id, price, meta.rarity_score, matched_rule),
-                             parse_mode='html')
+                    messages.put_nowait(to_html(side, meta.id, price, meta.rarity_score, matched_rule))
                 except Exception as e:
                     logging.error(e)
             time.sleep(0.2)
-
         except ValueError:
             pass
 
         except KeyboardInterrupt as e:
-            send_msg(bot, f"BOT IS SHUTTING DOWN...\nReason: {e}")
-            bot.disconnect()
+            messages.put_nowait(f"BOT IS SHUTTING DOWN...\nReason: {e}")
             raise KeyboardInterrupt from e
 
         except Exception:
@@ -165,6 +191,8 @@ def main():
 
 
 if __name__ == '__main__':
+    telegram_thread = Notifier("telegram")
+    telegram_thread.start()
     while True:
         try:
             main()

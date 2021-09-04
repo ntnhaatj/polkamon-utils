@@ -42,5 +42,15 @@ rules = (
          type=ScvFeedType.BABY_SUPER_RARE,
          glitter=True,
          max_price_bnb=20,
+         min_score_per_bnb=500),
+    Rule(name='NHAT\'s CUSTOM',
+         type=ScvFeedType.CUSTOM,
+         glitter=True,
+         max_price_bnb=20,
+         min_score_per_bnb=500),
+    Rule(name='NHAT\'s CUSTOM',
+         type=ScvFeedType.CUSTOM,
+         horn=ScvFeedHorn.SUPER_RARE,
+         max_price_bnb=20,
          min_score_per_bnb=500)
 )
