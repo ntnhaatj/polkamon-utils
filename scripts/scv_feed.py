@@ -193,10 +193,9 @@ def main():
 if __name__ == '__main__':
     telegram_thread = Notifier("telegram")
     telegram_thread.start()
-    while True:
-        try:
-            main()
-        except KeyboardInterrupt as e:
-            logging.error(e)
-            logging.info("graceful shutdown")
-            break
+    try:
+        main()
+    except KeyboardInterrupt as e:
+        logging.error(e)
+        logging.info("graceful shutdown")
+        telegram_thread.join()
