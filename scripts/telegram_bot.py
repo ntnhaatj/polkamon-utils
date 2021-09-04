@@ -68,8 +68,6 @@ Hi\! I'm Polychain monster helper bot\!
 *Commands*
   /help ID \- show help
 
-This bot is open\-source, you can contribute it at [github link](https://github.com/ntnhaatj/polkamon-utils)
-
 *Donate*
   ETH: {os.environ['DONATE_ADDR']}
   BSC: {os.environ['DONATE_ADDR']}

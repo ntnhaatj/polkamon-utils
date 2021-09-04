@@ -7,7 +7,7 @@ import backoff
 METADATA_URL = "http://meta.polkamon.com/meta?id={id}"
 RANK_AND_SHARE = "https://pkm-collectorstaking.herokuapp.com/rankAndShare/{score}"
 LEADERBOARD = "https://pkm-collectorstaking.herokuapp.com/leaderboard?limit={limit}"
-OVERALL = "https://nft-tracker.net/_next/data/_gHjYQKhksFO8OZ-2Plqo/collections/polychainmonsters/statistics.json?slug=polychainmonsters&tab=overall"
+OVERALL = "https://nft-tracker.net/_next/data/x_eT6Y4CJosc-z5sXkI21/collections/polychainmonsters/statistics.json?slug=polychainmonsters&tab=overall"
 # PMONC_FILTER = "https://nft-tracker.net/api/assets/polychainmonsters?" \
 #                "limit=25&sort=attributes.Special:-1,token_id:1&offset=0&select=undefined" \
 #                "&filters=attributes.Background:Mountain%20Range," \

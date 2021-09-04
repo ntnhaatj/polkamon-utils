@@ -105,13 +105,15 @@ def get_color_by_spb(spb: int) -> str:
 
 
 # https://core.telegram.org/bots/api#html-style
-def to_html(side, token_id, price, score, matched_rule: Rule):
+def to_html(side, meta, price, score, matched_rule: Rule):
     score_per_bnb = int(score / price * 1E18)
-    url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{token_id}"
-    desc = "{} {:.4f} BNB | score: {:,}".format(side, price / 1E18, score)
-    delimiter = f"===={matched_rule.name}====\n"
-    spb_msg = "SPB: {} {:,}".format(get_color_by_spb(score_per_bnb), score_per_bnb)
-    msg = f"{delimiter}<a href='{url}'>{desc}</a>\n{spb_msg}"
+    url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{meta.id}"
+    desc = "===={}====\n" \
+           "{}> {:.4f} BNB | score: {:,}".format(matched_rule.name, side, price / 1E18, score)
+    msg = f"<a href='{meta.image}'>.</a>" \
+          f"<a href='{url}'>{desc}</a>\n" \
+          f"<b>SBP {get_color_by_spb(score_per_bnb)} {score_per_bnb}</b>\n" \
+          f"<b>PMONC {meta.id}</b>"
     return msg
 
 
@@ -152,10 +154,10 @@ class Notifier(threading.Thread):
 
 
 def handle_new_entries(evt_filter):
-    for e in evt_filter.get_new_entries():
-        if not pmon_contract(e):
+    for entry in evt_filter.get_new_entries():
+        if not pmon_contract(entry):
             continue
-        side, token_id, price = new_event_handler(e)
+        side, token_id, price = new_event_handler(entry)
         if side == TradeSide.SELL:
             try:
                 metadata = get_metadata(token_id)
@@ -175,7 +177,7 @@ def main():
             for side, meta, price, matched_rule in handle_new_entries(scv_filter_event):
                 logger.info(f"{meta.id} matched rule {matched_rule}")
                 try:
-                    messages.put_nowait(to_html(side, meta.id, price, meta.rarity_score, matched_rule))
+                    messages.put_nowait(to_html(side, meta, price, meta.rarity_score, matched_rule))
                 except Exception as e:
                     logging.error(e)
             time.sleep(0.2)
@@ -193,9 +195,10 @@ def main():
 if __name__ == '__main__':
     telegram_thread = Notifier("telegram")
     telegram_thread.start()
+    time.sleep(0.5)
     try:
         main()
-    except KeyboardInterrupt as e:
-        logging.error(e)
+    except KeyboardInterrupt as exc:
+        logging.error(exc)
         logging.info("graceful shutdown")
-        telegram_thread.join()
+    telegram_thread.join()
