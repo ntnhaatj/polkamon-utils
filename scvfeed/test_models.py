@@ -1,12 +1,18 @@
 from datatypes import Metadata
 import unittest
-from scripts.scv_feed_new import get_matched_rule
-from scvfeed.models import Rule, ScvFeedType, ScvFeedColor
+from scripts.scv_feed import get_matched_rule
+from scvfeed.models import Rule, ScvFeedType, ScvFeedColor, IgnoreRule
 import sys
 import logging
 
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     logging.disable(logging.CRITICAL)
+
+ignore_rules = (
+    IgnoreRule(name='MUCH LOW SCORE PER BNB',
+               special=False,
+               min_score_per_bnb_threshold=50),
+)
 
 
 class RulesTest(unittest.TestCase):
@@ -193,3 +199,31 @@ class RulesTest(unittest.TestCase):
                                        "animation_url": "https://assets.polkamon.com/videos/Unimons_T12C05H01B05G00.mp4"})
         matched_rule = get_matched_rule(int(0.1 * 1E18), meta, rules)
         print(matched_rule)
+
+    def test_should_ignore_high_price(self):
+        rules = (
+            Rule(name='GLITTER RARE',
+                 glitter=True,
+                 type=ScvFeedType.RARE,
+                 max_price_bnb=20,
+                 min_score_per_bnb=4000),
+        )
+        meta = Metadata.from_metadata({"boosterId": 10000000440771, "id": "10001322311",
+                                       "image": "https://assets.polkamon.com/images/Unimons_T04C05H08B04G01.jpg",
+                                       "name": "Uniturtle",
+                                       "initialProbabilities": {"horn": 0.16, "color": 0.2, "background": 1,
+                                                                "glitter": 0.01, "type": 0.06},
+                                       "attributes": [{"trait_type": "Type", "value": "Uniturtle"},
+                                                      {"trait_type": "Horn", "value": "Candy Cane"},
+                                                      {"trait_type": "Color", "value": "Red"},
+                                                      {"trait_type": "Background", "value": "Mountain Range"},
+                                                      {"trait_type": "Opening Network", "value": "Binance Smart Chain"},
+                                                      {"trait_type": "Glitter", "value": "Yes"},
+                                                      {"trait_type": "Special", "value": "No"},
+                                                      {"display_type": "date", "trait_type": "Birthday",
+                                                       "value": 1630645436},
+                                                      {"display_type": "number", "trait_type": "Booster",
+                                                       "value": 10000000440771}]})
+        matched_rule = get_matched_rule(int(40 * 1E18), meta, ignore_rules, rules)
+        assert matched_rule != None
+        assert matched_rule.name == 'GLITTER RARE'

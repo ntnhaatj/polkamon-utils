@@ -74,3 +74,26 @@ class Rule:
             if getattr(self, a) is not None
         )
         return ", ".join(filtered_rules)
+
+
+@dataclass
+class IgnoreRule:
+    name: str
+    special: bool = None
+    max_price_bnb_threshold: int = None
+    min_score_per_bnb_threshold: int = None
+
+    def should_ignore(self, price_in_bnb: float, metadata: Metadata) -> bool:
+        score = metadata.rarity_score
+        score_per_bnb = score / price_in_bnb
+        return ((score_per_bnb < self.min_score_per_bnb_threshold if self.min_score_per_bnb_threshold is not None else True)
+                and (price_in_bnb > self.max_price_bnb_threshold if self.max_price_bnb_threshold is not None else True)
+                and (metadata.attributes.special == self.special if self.special is not None else True))
+
+    def __str__(self):
+        filtered_rules = (
+            f"{a}={getattr(self, a)}"
+            for a in self.__dataclass_fields__.keys()
+            if getattr(self, a) is not None
+        )
+        return ", ".join(filtered_rules)

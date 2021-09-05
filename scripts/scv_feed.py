@@ -9,8 +9,8 @@ import web3_utils
 from enum import Enum
 from utils import get_metadata
 from datatypes import Metadata
-from scvfeed.models import Rule
-from scvfeed.config import rules
+from scvfeed.models import Rule, IgnoreRule
+from scvfeed.config import rules, ignored_rules
 import threading
 import queue
 
@@ -80,12 +80,18 @@ def new_event_handler(e):
         return None
 
 
-def get_matched_rule(price: int, metadata: Metadata, rul3s: Iterable[Rule]) -> Rule:
+def get_matched_rule(price: int, metadata: Metadata, ign_rules: Iterable[IgnoreRule], rul3s: Iterable[Rule]) -> Rule:
     price_in_bnb = price / 1E18
+
+    for ign_rule in ign_rules:
+        if ign_rule.should_ignore(price_in_bnb, metadata):
+            logger.info(f"ignore trash monster {ign_rule}")
+            return None
 
     for rule in rul3s:
         try:
             if rule.is_worth_buying(price_in_bnb, metadata):
+                logger.info(f"worth buying monster {rule}")
                 return rule
         except Exception as e:
             logger.error(f"encountered exception {rule}\n{e}")
@@ -162,7 +168,7 @@ def handle_new_entries(evt_filter):
             try:
                 metadata = get_metadata(token_id)
                 meta = Metadata.from_metadata(metadata)
-                matched_rule = get_matched_rule(price, meta, rules)
+                matched_rule = get_matched_rule(price, meta, ignored_rules, rules)
                 if matched_rule:
                     yield side, meta, price, matched_rule
             except Exception as e:
@@ -175,12 +181,11 @@ def main():
     while True:
         try:
             for side, meta, price, matched_rule in handle_new_entries(scv_filter_event):
-                logger.info(f"{meta.id} matched rule {matched_rule}")
                 try:
                     messages.put_nowait(to_html(side, meta, price, meta.rarity_score, matched_rule))
                 except Exception as e:
                     logging.error(e)
-            time.sleep(0.2)
+            time.sleep(0.4)
         except ValueError:
             pass
 

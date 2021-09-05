@@ -1,4 +1,10 @@
-from scvfeed.models import Rule, ScvFeedHorn, ScvFeedType, ScvFeedColor
+from scvfeed.models import Rule, ScvFeedHorn, ScvFeedType, ScvFeedColor, IgnoreRule
+
+ignored_rules = (
+    IgnoreRule(name='MUCH LOW SCORE PER BNB',
+               special=False,
+               min_score_per_bnb_threshold=500),
+)
 
 rules = (
     Rule(name='HIGH SCORE PER BNB',
@@ -41,16 +47,6 @@ rules = (
     Rule(name='GLITTER SR BABY',
          type=ScvFeedType.BABY_SUPER_RARE,
          glitter=True,
-         max_price_bnb=20,
-         min_score_per_bnb=500),
-    Rule(name='NHAT\'s CUSTOM',
-         type=ScvFeedType.CUSTOM,
-         glitter=True,
-         max_price_bnb=20,
-         min_score_per_bnb=500),
-    Rule(name='NHAT\'s CUSTOM',
-         type=ScvFeedType.CUSTOM,
-         horn=ScvFeedHorn.SUPER_RARE,
          max_price_bnb=20,
          min_score_per_bnb=500)
 )
