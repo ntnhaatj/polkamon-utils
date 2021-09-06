@@ -56,6 +56,8 @@ class Attribute:
 
 
 RARITY_SCORE_MAX_CAP = 1_000_000
+
+
 @dataclass
 class Metadata:
     id: str
@@ -79,7 +81,7 @@ class Metadata:
                    rarity=rarity)
 
     @property
-    def rarity_pct(self) -> float:
+    def rarity_score(self) -> float:
         if not self.attributes.special:
             rarity_fields = self.rarity.__dataclass_fields__.keys()
         else:
@@ -88,16 +90,18 @@ class Metadata:
                 for f in self.rarity.__dataclass_fields__.keys()
                 if f not in ['color', 'background']
             )
+        if self.attributes.special:
+            rarity_score = reduce(lambda r, k: r * ((1 / getattr(self.rarity, k) - 1) / 8 + 1),
+                                  rarity_fields,
+                                  1) * 40
+        else:
+            rarity_score = reduce(lambda r, k: r * (1 / getattr(self.rarity, k)),
+                                  rarity_fields,
+                                  1) * 0.0325
+            if self.attributes.horn == Horn.BABY_HORN.value:
+                rarity_score = rarity_score * 5  # 20% spiral horn
 
-        return reduce(lambda r, k: r * getattr(self.rarity, k),
-                      rarity_fields,
-                      1)
-
-    @property
-    def rarity_score(self) -> int:
-        return min(RARITY_SCORE_MAX_CAP,
-                   int(1 / self.rarity_pct * 0.0325) if not self.attributes.special
-                   else 0)
+        return min(RARITY_SCORE_MAX_CAP, int(rarity_score))
 
 
 class Traits(Enum):
