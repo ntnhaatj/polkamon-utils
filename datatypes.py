@@ -96,7 +96,7 @@ class Metadata:
     @property
     def rarity_score(self) -> int:
         return min(RARITY_SCORE_MAX_CAP,
-                   int(1 / self.rarity_pct / 40) if not self.attributes.special
+                   int(1 / self.rarity_pct * 0.0325) if not self.attributes.special
                    else 0)
 
 
