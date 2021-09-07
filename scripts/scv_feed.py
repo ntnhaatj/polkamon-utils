@@ -9,8 +9,8 @@ import web3_utils
 from enum import Enum
 from utils import get_metadata
 from datatypes import Metadata
-from scvfeed.models import Rule, IgnoreRule
-from scvfeed.config import rules, ignored_rules
+from scvfeed.models import Rule
+from scvfeed.config import rules
 import threading
 import queue
 
@@ -22,7 +22,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     filemode='a+')
 logger = logging.getLogger(__name__)
 
-TELEGRAM_CHAT_ID = -1001597613597
+TELEGRAM_CHAT_ID = {
+    'scvfeed': -1001597613597,
+    'hihifeed': -1001532402384,
+}
 SCV_CONTRACT = '0x9437E3E2337a78D324c581A4bFD9fe22a1aDBf04'
 
 # notification pool
@@ -80,13 +83,8 @@ def new_event_handler(e):
         return None
 
 
-def get_matched_rule(price: int, metadata: Metadata, ign_rules: Iterable[IgnoreRule], rul3s: Iterable[Rule]) -> Rule:
+def get_matched_rule(price: int, metadata: Metadata, rul3s: Iterable[Rule]) -> Rule:
     price_in_bnb = price / 1E18
-
-    for ign_rule in ign_rules:
-        if ign_rule.should_ignore(price_in_bnb, metadata):
-            logger.info(f"ignore trash monster {ign_rule}")
-            return None
 
     for rule in rul3s:
         try:
@@ -100,11 +98,11 @@ def get_matched_rule(price: int, metadata: Metadata, ign_rules: Iterable[IgnoreR
 
 
 def get_color_by_spb(spb: int) -> str:
-    if spb < 4000:
+    if spb < 5000:
         return "🟢"
-    elif spb < 7000:
+    elif spb < 8000:
         return "🔵"
-    elif spb < 10000:
+    elif spb < 11000:
         return "🟡"
     else:
         return "🟣"
@@ -135,7 +133,7 @@ def on_start_intro() -> str:
                       exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
 def send_msg(msg, parse_mode=''):
     params = (
-        f'chat_id={TELEGRAM_CHAT_ID}',
+        f'chat_id={TELEGRAM_CHAT_ID[os.getenv("TID", "scvfeed")]}',
         f'text={msg}',
         f'parse_mode={parse_mode}'
     )
@@ -168,7 +166,7 @@ def handle_new_entries(evt_filter):
             try:
                 metadata = get_metadata(token_id)
                 meta = Metadata.from_metadata(metadata)
-                matched_rule = get_matched_rule(price, meta, ignored_rules, rules)
+                matched_rule = get_matched_rule(price, meta, rules)
                 if matched_rule:
                     yield side, meta, price, matched_rule
             except Exception as e:
@@ -186,14 +184,13 @@ def main():
                 except Exception as e:
                     logging.error(e)
             time.sleep(0.4)
-        except ValueError:
-            pass
 
         except KeyboardInterrupt as e:
             messages.put_nowait(f"BOT IS SHUTTING DOWN...\nReason: {e}")
             raise KeyboardInterrupt from e
 
-        except Exception:
+        except Exception as e:
+            logger.error(str(e))
             continue
 
 
