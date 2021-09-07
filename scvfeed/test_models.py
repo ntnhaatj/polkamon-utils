@@ -1,18 +1,12 @@
 from datatypes import Metadata
 import unittest
 from scripts.scv_feed import get_matched_rule
-from scvfeed.models import Rule, ScvFeedType, ScvFeedColor, IgnoreRule
+from scvfeed.models import Rule, SFType, SFColor
 import sys
 import logging
 
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     logging.disable(logging.CRITICAL)
-
-ignore_rules = (
-    IgnoreRule(name='MUCH LOW SCORE PER BNB',
-               special=False,
-               min_score_per_bnb_threshold=50),
-)
 
 
 class RulesTest(unittest.TestCase):
@@ -52,7 +46,7 @@ class RulesTest(unittest.TestCase):
                  max_price_bnb=20),
             Rule(name='GLITTER RARE',
                  glitter=True,
-                 type=ScvFeedType.RARE,
+                 type=SFType.RARE,
                  max_price_bnb=20,
                  min_score_per_bnb=4000)
         )
@@ -85,15 +79,15 @@ class RulesTest(unittest.TestCase):
                  special=True,
                  max_price_bnb=20),
             Rule(name='RARE COLOR HIGH SPB',
-                 color=ScvFeedColor.RARE,
+                 color=SFColor.RARE,
                  max_price_bnb=20,
                  min_score_per_bnb=3000),
             Rule(name='ALL BLACKS',
-                 color=ScvFeedColor.SUPER_RARE,
+                 color=SFColor.SUPER_RARE,
                  max_price_bnb=20),
             Rule(name='GLITTER RARE',
                  glitter=True,
-                 type=ScvFeedType.RARE,
+                 type=SFType.RARE,
                  max_price_bnb=20,
                  min_score_per_bnb=4000)
         )
@@ -120,7 +114,7 @@ class RulesTest(unittest.TestCase):
     def test_worth_buying_baby_glitter(self):
         rules = (
             Rule(name='GLITTER SR BABY',
-                 type=ScvFeedType.BABY_SUPER_RARE,
+                 type=SFType.BABY_SUPER_RARE,
                  glitter=True,
                  max_price_bnb=20,
                  min_score_per_bnb=500),
@@ -149,7 +143,7 @@ class RulesTest(unittest.TestCase):
         rules = (
             Rule(name='GLITTER RARE',
                  glitter=True,
-                 type=ScvFeedType.RARE,
+                 type=SFType.RARE,
                  max_price_bnb=20,
                  min_score_per_bnb=4000),
         )
@@ -204,7 +198,7 @@ class RulesTest(unittest.TestCase):
         rules = (
             Rule(name='GLITTER RARE',
                  glitter=True,
-                 type=ScvFeedType.RARE,
+                 type=SFType.RARE,
                  max_price_bnb=20,
                  min_score_per_bnb=4000),
         )
@@ -224,6 +218,6 @@ class RulesTest(unittest.TestCase):
                                                        "value": 1630645436},
                                                       {"display_type": "number", "trait_type": "Booster",
                                                        "value": 10000000440771}]})
-        matched_rule = get_matched_rule(int(40 * 1E18), meta, ignore_rules, rules)
+        matched_rule = get_matched_rule(int(40 * 1E18), meta, rules)
         assert matched_rule != None
         assert matched_rule.name == 'GLITTER RARE'
