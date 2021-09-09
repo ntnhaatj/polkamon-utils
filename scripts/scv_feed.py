@@ -130,7 +130,7 @@ def on_start_intro() -> str:
 @backoff.on_exception(backoff.constant,
                       interval=1,
                       max_tries=3,
-                      exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+                      exception=(requests.exceptions.RequestException, ))
 def send_msg(msg, parse_mode=''):
     params = (
         f'chat_id={TELEGRAM_CHAT_ID[os.getenv("TID", "scvfeed")]}',
@@ -147,14 +147,17 @@ class Notifier(threading.Thread):
 
     def run(self) -> None:
         while True:
-            while not messages.empty():
-                msg = messages.get_nowait()
-                try:
-                    send_msg(msg, parse_mode='html')
-                except Exception as e:
-                    logger.error(f"failed to send {msg}: {e}")
-                    pass
-            time.sleep(0.1)
+            try:
+                while not messages.empty():
+                    msg = messages.get_nowait()
+                    try:
+                        send_msg(msg, parse_mode='html')
+                    except Exception as e:
+                        logger.error(f"failed to send {msg}: {e}")
+                        pass
+                time.sleep(0.1)
+            except KeyboardInterrupt as e:
+                raise KeyboardInterrupt from e
 
 
 def handle_new_entries(evt_filter):
@@ -178,15 +181,15 @@ def main():
     messages.put_nowait(on_start_intro())
     while True:
         try:
+            time.sleep(0.5)
             for side, meta, price, matched_rule in handle_new_entries(scv_filter_event):
                 try:
                     messages.put_nowait(to_html(side, meta, price, meta.rarity_score, matched_rule))
                 except Exception as e:
                     logging.error(e)
-            time.sleep(0.4)
 
         except KeyboardInterrupt as e:
-            messages.put_nowait(f"BOT IS SHUTTING DOWN...\nReason: {e}")
+            # messages.put_nowait(f"BOT IS SHUTTING DOWN...\nReason: {e}")
             raise KeyboardInterrupt from e
 
         except Exception as e:
@@ -197,10 +200,9 @@ def main():
 if __name__ == '__main__':
     telegram_thread = Notifier("telegram")
     telegram_thread.start()
-    time.sleep(0.5)
+    time.sleep(1)
     try:
         main()
     except KeyboardInterrupt as exc:
         logging.error(exc)
         logging.info("graceful shutdown")
-    telegram_thread.join()
