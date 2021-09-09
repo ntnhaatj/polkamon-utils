@@ -87,7 +87,7 @@ Commands
 # https://core.telegram.org/bots/api#html-style
 INFO_HTML_TEMPLATE = "<a href='{image}'>&#8205;</a>" \
                      "{ref_links}\n" \
-                     "s: {score} | b: {birthday}"
+                     "score: {score} | born: {birthday}"
 
 
 def to_html(url_desc: DescUrl, **fmt_args):
@@ -133,12 +133,14 @@ class BotHandlers:
 
     @staticmethod
     def info(update, context):
+        pmon_id = update.message.text.split(" ")[-1]
         try:
-            pmon_id = update.message.text.split(" ")[-1]
+            if not isinstance(int(pmon_id), int):
+                raise Exception
             metadata = get_metadata(pmon_id)
             meta = Metadata.from_metadata(metadata)
         except Exception as e:
-            update.message.reply_text(f"Invalid {update.message.text}")
+            update.message.reply_text(f"invalid {pmon_id}")
             raise Exception from e
 
         update.message.reply_text(
@@ -228,6 +230,7 @@ class BotHandlers:
     def error(update, context):
         """Log Errors caused by Updates."""
         logger.warning('Update "%s" caused error "%s"', update, context.error)
+        update.message.reply_text(f"Invalid {update.message.text}")
 
 
 def main():
