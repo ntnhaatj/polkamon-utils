@@ -94,18 +94,17 @@ def get_color_by_spb(spb: int) -> str:
 
 
 # https://core.telegram.org/bots/api#html-style
-def to_html(side, meta, price, score, matched_rule: Rule):
+def to_html(meta, price, score, matched_rule: Rule):
     score_per_bnb = int(score / price * 1E18)
     url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{meta.id}"
-    desc = "{}\n" \
+    desc = "{} {:.4f} BNB\n" \
            "SPB {} {}\n" \
-           "{}> {:.4f} BNB\n" \
            "Score: {:,}".format(
-        meta.name, get_color_by_spb(score_per_bnb), score_per_bnb, side, price / 1E18, score)
+        meta.name, price / 1E18, get_color_by_spb(score_per_bnb), score_per_bnb, score)
     msg = f"<a href='{meta.image}'>.</a>" \
           f"<a href='{url}'>{desc}</a>\n" \
-          f"<b>PMONC {meta.id}</b>\n" \
-          f"<b>Reason {matched_rule.name}</b>"
+          f"PMONC {meta.id}\n" \
+          f"{matched_rule.name}"
     return msg
 
 
@@ -165,6 +164,7 @@ def new_event_handler(evt):
         tx = evt['transactionHash'].hex()
         logger.info("new event %s %d with price %.2f, tx %s", side, token_id, price, tx)
         return side, token_id, price
+    return None, None, None
 
 
 def get_sell_event(evt_filter):
@@ -176,7 +176,11 @@ def get_sell_event(evt_filter):
     # to avoid duplicated event emit
     pre_token_id = None
     for e in new_entries:
-        side, token_id, price = new_event_handler(e)
+        try:
+            side, token_id, price = new_event_handler(e)
+        except Exception as e:
+            logging.exception(str(e))
+            continue
         if side == TradeSide.SELL and token_id != pre_token_id:
             pre_token_id = token_id
             yield side, token_id, price
@@ -193,7 +197,7 @@ def main():
                 matched_rule = get_matched_rule(price, meta, rules)
                 if matched_rule:
                     try:
-                        messages.put_nowait(to_html(side, meta, price, meta.rarity_score, matched_rule))
+                        messages.put_nowait(to_html(meta, price, meta.rarity_score, matched_rule))
                     except Exception as e:
                         logging.exception(str(e))
 

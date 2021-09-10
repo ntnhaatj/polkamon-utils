@@ -30,6 +30,18 @@ def get_metadata(m_id: str) -> dict:
     raise RequestException
 
 
+@backoff.on_exception(backoff.expo,
+                      requests.exceptions.RequestException,
+                      max_tries=2)
+async def get_metadata_async(m_id: str) -> dict:
+    url = METADATA_URL.format(id=m_id)
+    res = await requests.get(url)
+    if res.status_code == 200:
+        return res.json()
+
+    raise RequestException
+
+
 def get_share_on_score(score: int) -> float:
     url = RANK_AND_SHARE.format(score=score)
     res = requests.get(url)
