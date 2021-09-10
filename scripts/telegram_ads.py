@@ -2,6 +2,7 @@ import os
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 import time
+import yaml
 
 
 # get your api_id, api_hash, token
@@ -25,26 +26,16 @@ if not client.is_user_authorized():
         client.sign_in(password=input('Password: '))
 
 
-SELLING_LIST = (
-    ('glitter turtle, accept reasonable offer',
-     'https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/10001290268'),
+def get_ads_from_conf(path: str):
+    with open(path, 'r') as file:
+        return yaml.safe_load(file)['ads']
 
-    ('🔥 20k staking score, accept reasonable offer',
-     'https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/10001256850'),
-
-    ('glitter baby chick, accept reasonable offer',
-     'https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/10000419976'),
-
-    ('cheap glitter fairy',
-     'https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/10001464289'),
-
-    ('black turtle, accept reasonable offer',
-     'https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/10001381330')
-)
 
 while True:
-    for sell in SELLING_LIST:
-        msg = '\n'.join(sell)
+    for ad in get_ads_from_conf('conf/ads.yml'):
+        msg = '\n'.join(ad.values())
+        print("======== send ads ===========")
+        print(f"send message: {msg}")
         with client:
             client.loop.run_until_complete(client.send_message(entity='PolkamonTrading', message=msg))
         time.sleep(600)
