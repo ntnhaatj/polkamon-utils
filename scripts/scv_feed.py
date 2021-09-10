@@ -97,14 +97,15 @@ def get_color_by_spb(spb: int) -> str:
 def to_html(meta, price, score, matched_rule: Rule):
     score_per_bnb = int(score / price * 1E18)
     url = f"https://scv.finance/nft/bsc/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/{meta.id}"
-    desc = "{} {:.4f} BNB\n" \
-           "SPB {} {}\n" \
+    desc = "{} <b>{:.4f}</> BNB\n" \
+           "<b>SPB {} {}</b>\n" \
            "Score: {:,}".format(
         meta.name, price / 1E18, get_color_by_spb(score_per_bnb), score_per_bnb, score)
     msg = f"<a href='{meta.image}'>.</a>" \
-          f"<a href='{url}'>{desc}</a>\n" \
+          f"{desc}\n" \
           f"PMONC {meta.id}\n" \
-          f"{matched_rule.name}"
+          f"{matched_rule.name}\n" \
+          f"{url}"
     return msg
 
 
