@@ -12,6 +12,8 @@ backoff = "*"
 web3 = "*"
 tqdm = "*"
 pytest = "*"
+telethon = "*"
+pyyaml = "*"
 
 [dev-packages]
 
