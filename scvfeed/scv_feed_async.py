@@ -18,7 +18,9 @@ from scvfeed.blocksearch import ScvBlockSearch
 # Enable logging
 log_filename = datetime.now().strftime('log/scvfeed_%Y%m%d.log')
 logging.basicConfig(format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+                    level=logging.INFO,
+                    filename=log_filename,
+                    filemode='a+')
 logger = logging.getLogger(__name__)
 
 BOT_INTRO_TEMPLATE = "Start earning money mode\n" \
