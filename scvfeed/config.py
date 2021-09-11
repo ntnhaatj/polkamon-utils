@@ -1,3 +1,4 @@
+import os
 from scvfeed.models import Rule, SFHorn, SFType, SFColor
 
 rules = (
@@ -40,3 +41,10 @@ rules = (
          special=True,
          max_price_bnb=15),
 )
+
+BSC_WS_PROVIDER = os.getenv("BSC_WS_PROVIDER", "wss://bsc-ws-node.nariox.org:443")
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = {
+    'scvfeed': -1001597613597,
+    'hihifeed': -1001532402384,
+}

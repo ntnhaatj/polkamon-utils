@@ -42,9 +42,9 @@ class Rule:
                 and (metadata.attributes.special == self.special if self.special is not None else True)
                 and (metadata.attributes.glitter == self.glitter if self.glitter is not None else True)
                 # could raise exception
-                and (Type.of(metadata.attributes.type) in self.type if self.type is not None else True)
-                and (Horn.of(metadata.attributes.horn) in self.horn if self.horn is not None else True)
-                and (Color.of(metadata.attributes.color) in self.color if self.color is not None else True))
+                and (Type.of(metadata.attributes.type) in self.type if self.type else True)
+                and (Horn.of(metadata.attributes.horn) in self.horn if self.horn else True)
+                and (Color.of(metadata.attributes.color) in self.color if self.color else True))
 
     def __str__(self):
         filtered_rules = (

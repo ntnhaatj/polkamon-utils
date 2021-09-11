@@ -91,9 +91,12 @@ class Metadata:
                 if f not in ['color', 'background']
             )
         if self.attributes.special:
-            rarity_score = reduce(lambda r, k: r * ((1 / getattr(self.rarity, k) - 1) / 8 + 1),
-                                  rarity_fields,
-                                  1) * 40
+            try:
+                rarity_score = reduce(lambda r, k: r * ((1 / getattr(self.rarity, k) - 1) / 8 + 1),
+                                      rarity_fields,
+                                      1) * 40
+            except ArithmeticError:
+                rarity_score = 0
         else:
             rarity_score = reduce(lambda r, k: r * (1 / getattr(self.rarity, k)),
                                   rarity_fields,
