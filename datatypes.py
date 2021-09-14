@@ -172,10 +172,14 @@ class Glitter(Traits):
     NO = "No"
 
     @classmethod
-    def of(cls, i: str):
-        if i in "glitter" or i in "Glitter":
-            return cls.YES
-        raise NotImplementedError(f"not found {i}")
+    def of(cls, i):
+        if isinstance(i, bool):
+            return cls.YES if i else cls.NO
+
+        if isinstance(i, str):
+            return cls.YES if i and (i in "glitter" or i in "Glitter") else cls.NO
+
+        return cls.NO
 
     def __str__(self):
         return "Glitter" if self == Glitter.YES else ""

@@ -4,7 +4,7 @@ from scvfeed.models import Rule, SFHorn, SFType, SFColor
 rules = (
     Rule(name='HIGH SCORE PER BNB',
          type=SFType.ALL,
-         min_score_per_bnb=6000),
+         min_score_per_bnb=7000),
     Rule(name='HIGH SCORE PER BNB',
          type=(SFType.RARE + SFType.BABY),
          min_score_per_bnb=5000),

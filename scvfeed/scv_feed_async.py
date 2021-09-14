@@ -7,8 +7,9 @@ import backoff
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
-from datatypes import Metadata
+from datatypes import Metadata, Type, Horn, Color, Glitter
 from utils import get_metadata
+from helpers import SCVFilterBuilder
 import scvfeed.config as config
 from scvfeed.models import Rule
 from scvfeed.blocksearch import OfferInfo
@@ -28,14 +29,28 @@ BOT_INTRO_TEMPLATE = "Start earning money mode\n" \
 
 
 def get_color_by_spb(spb: int) -> str:
-    if spb < 5000:
+    if spb < 6000:
         return "🟢"
-    elif spb < 8000:
+    elif spb < 9000:
         return "🔵"
-    elif spb < 11000:
+    elif spb < 12000:
         return "🟡"
     else:
         return "🟣"
+
+
+def get_scv_ref(meta: Metadata):
+    scv_link = ''
+    try:
+        scv_link = SCVFilterBuilder(
+            type=Type.of(meta.attributes.type),
+            horn=Horn.of(meta.attributes.horn),
+            color=Color.of(meta.attributes.color),
+            glitter=Glitter.of(meta.attributes.glitter)
+        ).url
+    except Exception as e:
+        pass
+    return scv_link.replace(" ", "%20")
 
 
 # https://core.telegram.org/bots/api#html-style
@@ -46,11 +61,12 @@ def to_html(meta, price, score, matched_rule: Rule):
            "<b>SPB {} {}</b>\n" \
            "Score: {:,}".format(
         meta.name, price / 1E18, get_color_by_spb(score_per_bnb), score_per_bnb, score)
+    scv_ref = get_scv_ref(meta)
     msg = f"<a href='{meta.image}'>.</a>" \
           f"{desc}\n" \
-          f"PMONC {meta.id}\n" \
-          f"{matched_rule.name}\n" \
-          f"{url}"
+          f"{url}\n" \
+          f"========================\n" \
+          f"<a href='{scv_ref}'>Reference URL</a>"
     return msg
 
 
@@ -59,11 +75,13 @@ def to_html(meta, price, score, matched_rule: Rule):
                                  requests.exceptions.ConnectTimeout),
                       max_tries=2)
 def send_msg(msg):
-    params = (f'chat_id={config.TELEGRAM_CHAT_ID[os.getenv("TID", "scvfeed")]}',
-              f'text={msg}',
-              'parse_mode=html')
-    requests.get("https://api.telegram.org/bot{}/sendMessage?{}".format(
-        config.TELEGRAM_BOT_TOKEN, '&'.join(params)), timeout=2)
+    params = {
+        'chat_id': config.TELEGRAM_CHAT_ID[os.getenv("TID", "scvfeed")],
+        'text': msg,
+        'parse_mode': 'html'
+    }
+    requests.get("https://api.telegram.org/bot{}/sendMessage".format(
+        config.TELEGRAM_BOT_TOKEN), timeout=2, params=params)
 
 
 class ScvFeed:
