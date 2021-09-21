@@ -86,11 +86,11 @@ def send_msg(msg):
 
 class ScvFeed:
     def __init__(self):
-        self.scv_block_search = ScvBlockSearch(config.BSC_WS_PROVIDER)
+        self.scv_block_search = ScvBlockSearch(config.BSC_PROVIDER)
 
     def reconnect(self):
         logger.info("reconnecting...")
-        self.scv_block_search = ScvBlockSearch(config.BSC_WS_PROVIDER)
+        self.scv_block_search = ScvBlockSearch(config.BSC_PROVIDER)
 
     @classmethod
     def get_matched_rule(

@@ -40,7 +40,7 @@ class TradeSide(Enum):
         return 'SELL' if self == TradeSide.SELL else 'BUY'
 
 
-BSC_WS_PROVIDER = os.getenv("BSC_WS_PROVIDER", "wss://bsc-ws-node.nariox.org:443")
+BSC_PROVIDER = os.getenv("BSC_PROVIDER", "wss://bsc-ws-node.nariox.org:443")
 
 
 @dataclass
@@ -48,11 +48,10 @@ class OfferInfo:
     token_id: int
     side: TradeSide
     price: int
+    tx: str
 
     def __eq__(self, other):
-        return self.token_id == other.token_id \
-               and self.side == other.side \
-               and self.price == other.price
+        return self.tx == other.tx
 
 
 # EvNewOffer (
@@ -68,14 +67,15 @@ class ScvBlockSearch:
     NEW_OFFER_EVT = 'EvNewOffer(address,address,uint256,uint256,uint8,uint256)'
     TOKEN_DECIMAL = 1E18
 
-    def __init__(self, provider, provider_type=Web3.WebsocketProvider):
-        self.web3 = Web3(provider_type(provider))
+    def __init__(self, provider):
+        if 'wss' in provider:
+            self.web3 = Web3(Web3.WebsocketProvider(provider))
+        else:
+            self.web3 = Web3(Web3.HTTPProvider(provider))
         self.scv_filter = self.web3.eth.filter({
-            "address": self.CONTRACT, "topics": [self.method_topic]})
-
-    @property
-    def method_topic(self):
-        return self.web3.sha3(text=self.NEW_OFFER_EVT).hex()
+            "address": self.CONTRACT,
+            "topics": [Web3.sha3(text=self.NEW_OFFER_EVT).hex()]
+        })
 
     @classmethod
     def _handle_new_evt(cls, evt) -> OfferInfo:
@@ -89,8 +89,8 @@ class ScvBlockSearch:
             price = int(f"0x{price_hexstr}", 16)
             tx = evt['transactionHash'].hex()
             logger.info("new event %s %d with price %.2f, tx %s", side, token_id, price, tx)
-            return OfferInfo(token_id=token_id, side=side, price=price)
-        return OfferInfo(0, TradeSide.SELL, 0)
+            return OfferInfo(token_id=token_id, side=side, price=price, tx=tx)
+        return OfferInfo(0, TradeSide.SELL, 0, '')
 
     def get_sell_event(self) -> typing.Generator:
         try:
@@ -100,7 +100,7 @@ class ScvBlockSearch:
             raise FilterNotFoundError from e
 
         # to avoid duplicated event emit
-        last_offer_info = OfferInfo(0, TradeSide.SELL, 0)
+        last_offer_info = OfferInfo(0, TradeSide.SELL, 0, '')
         for e in new_entries:
             try:
                 offer_info = self._handle_new_evt(e)

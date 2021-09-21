@@ -42,7 +42,7 @@ rules = (
          max_price_bnb=15),
 )
 
-BSC_WS_PROVIDER = os.getenv("BSC_WS_PROVIDER", "wss://bsc-ws-node.nariox.org:443")
+BSC_PROVIDER = os.getenv("BSC_PROVIDER", "wss://bsc-ws-node.nariox.org:443")
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = {
     'scvfeed': -1001597613597,
