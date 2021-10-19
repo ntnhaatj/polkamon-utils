@@ -68,10 +68,6 @@ Hi\! I'm Polychain monster helper bot\!
 
 *Commands*
   /help ID \- show help
-
-*Donate*
-  ETH: {os.environ['DONATE_ADDR']}
-  BSC: {os.environ['DONATE_ADDR']}
 """
 
 HELP = f"""
