@@ -83,7 +83,11 @@ class Metadata:
     @property
     def rarity_score(self) -> float:
         if not self.attributes.special:
-            rarity_fields = self.rarity.__dataclass_fields__.keys()
+            rarity_fields = (
+                f
+                for f in self.rarity.__dataclass_fields__.keys()
+                if f not in ['background']
+            )
         else:
             rarity_fields = (
                 f
